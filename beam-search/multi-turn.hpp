@@ -1,7 +1,6 @@
 // Original author: eijirou_kyopro (eijirou)
 // Article/original source: https://eijirou-kyopro.hatenablog.com/entry/2024/02/01/115639
-// Permission: the article permits free use of its source code in programming contests;
-// public-repository copying was additionally confirmed by the author (user-provided report).
+// Permission: the article permits free use of its source code in programming contests.
 // Retrieved: 2026-08-29 (JST)
 // Modifications: extracted from the article's 2025-03-16 code block
 // (including the 2025-07-29 node-removal bug fix) with syntax-highlighting HTML tags
