@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SearchStats API | ahc-library</title>
+  <style>
+    :root { color-scheme:light dark; --bg:#f7f8fb; --fg:#172033; --card:#fff; --line:#c8d0df; --accent:#155eef; }
+    @media (prefers-color-scheme:dark) { :root { --bg:#111827; --fg:#edf2f7; --card:#1f2937; --line:#526071; --accent:#8ab4ff; } }
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.65 system-ui,sans-serif}main{max-width:900px;margin:auto;padding:clamp(1rem,4vw,3rem)}a{color:var(--accent)}.diagram{width:100%;height:auto;border:1px solid var(--line);border-radius:12px;background:var(--card)}pre{overflow:auto;padding:1rem;border-radius:10px;background:#111827;color:#f8fafc}code,pre{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:.8rem}.card{padding:1rem;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+  </style>
+</head>
+<body><main>
+  <p><a href="index.html">← local-search</a></p>
+  <h1>search_stats.hpp</h1>
+  <p>探索中の「どれだけ試し、どれだけ動き、best が何回更新されたか」を数えます。</p>
+  <svg class="diagram" viewBox="0 0 760 210" role="img" aria-labelledby="s-title s-desc">
+    <title id="s-title">SearchStats の集計</title><desc id="s-desc">候補 score と受理結果を試行数、受理数、best 更新へ分けて記録する。</desc>
+    <g fill="none" stroke="currentColor" stroke-width="2"><path d="M140 105H245"/><path d="M380 55V85"/><path d="M380 125V155"/><path d="M515 55H620"/><path d="M515 105H620"/><path d="M515 155H620"/></g>
+    <g fill="var(--card)" stroke="currentColor" stroke-width="2"><rect x="25" y="65" width="115" height="80" rx="12"/><rect x="245" y="65" width="270" height="80" rx="12"/><rect x="620" y="25" width="115" height="55" rx="12"/><rect x="620" y="80" width="115" height="55" rx="12"/><rect x="620" y="135" width="115" height="55" rx="12"/></g>
+    <g text-anchor="middle" fill="currentColor" font-size="18"><text x="82" y="98">observe</text><text x="82" y="126">score, accepted</text><text x="380" y="99">試行を1回追加</text><text x="380" y="127">受理なら best 比較</text><text x="678" y="59">attempts</text><text x="678" y="114">accepted</text><text x="678" y="169">improved</text></g>
+  </svg>
+  <h2>最小 API</h2>
+  <pre><code>ahc::SearchStats&lt;double&gt; stats(ahc::Objective::minimize);
+stats.seed(initial_score);
+// 受理した候補だけを best と比較する
+stats.observe(candidate_score, accepted);
+std::uint64_t n = stats.attempts();
+double rate = stats.acceptance_rate();</code></pre>
+  <section class="cards"><div class="card"><strong>attempts()</strong><br>試行数</div><div class="card"><strong>accepted()</strong><br>受理数</div><div class="card"><strong>improved()</strong><br>best 更新数</div><div class="card"><strong>best()</strong><br>best score</div></section>
+  <p>試行0回の受理率は 0.0。best 未登録で <code>best()</code> を呼ぶと <code>logic_error</code>、NaN の <code>seed</code> は <code>invalid_argument</code> です。</p>
+  <p><small>AI事前作成コード公開元: <a href="https://github.com/LBJ-code/ahc-library">https://github.com/LBJ-code/ahc-library</a></small></p>
+</main></body></html>

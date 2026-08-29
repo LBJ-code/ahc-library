@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>tools | AHC library</title>
+  <style>
+    :root { color-scheme:light dark; --bg:#f7f8fa; --fg:#18202a; --card:#fff; --line:#cbd5e1; --accent:#7c3aed; }
+    @media (prefers-color-scheme:dark) { :root { --bg:#111827; --fg:#edf2f7; --card:#1f2937; --line:#4b5563; --accent:#c4b5fd; } }
+    * { box-sizing:border-box; } body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.65 system-ui,sans-serif; }
+    main { width:min(900px,92vw); margin:auto; padding:2rem 0 3rem; } nav { display:flex; flex-wrap:wrap; gap:.8rem; } a { color:var(--accent); }
+    article { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:1rem; } code,pre { background:#0001; border-radius:5px; } code { padding:.1em .3em; }
+    svg { display:block; width:100%; height:auto; margin:1rem 0; background:var(--card); border:1px solid var(--line); border-radius:12px; }
+  </style>
+</head>
+<body>
+<main>
+  <nav aria-label="ページ"><a href="../README.md">リポジトリREADME</a><a href="README.md">tools README</a><a href="../utilities/index.html">utilities</a></nav>
+  <h1>tools: 提出前に1ファイルへ</h1>
+  <p>AtCoderへ出す前、ローカルの部品を順番に展開します。実行はPython標準機能だけです。</p>
+  <svg viewBox="0 0 800 230" role="img" aria-labelledby="tool-title tool-desc">
+    <title id="tool-title">amalgamateの流れ</title>
+    <desc id="tool-desc">main.cppと2つのヘッダを読み、1つのsubmission.cppへまとめる</desc>
+    <rect x="25" y="70" width="170" height="90" rx="14" fill="#7c3aed"/><text x="110" y="108" text-anchor="middle" fill="white" font-size="21">main.cpp</text><text x="110" y="137" text-anchor="middle" fill="white">include</text>
+    <path d="M205 115H270" stroke="currentColor" stroke-width="4" marker-end="url(#arrow)"/>
+    <rect x="280" y="30" width="180" height="70" rx="14" fill="#64748b"/><text x="370" y="73" text-anchor="middle" fill="white">grid.hpp</text>
+    <rect x="280" y="130" width="180" height="70" rx="14" fill="#64748b"/><text x="370" y="173" text-anchor="middle" fill="white">other.hpp</text>
+    <path d="M470 65L535 100M470 165L535 130" stroke="currentColor" stroke-width="4" marker-end="url(#arrow)"/>
+    <rect x="545" y="70" width="230" height="90" rx="14" fill="#059669"/><text x="660" y="108" text-anchor="middle" fill="white" font-size="21">submission.cpp</text><text x="660" y="137" text-anchor="middle" fill="white">1ファイル</text>
+    <defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8z" fill="currentColor"/></marker></defs>
+  </svg>
+  <article><h2><a href="amalgamate.html">amalgamate.py</a></h2><p>quoted includeだけを再帰展開します。重複は1回、循環は明確なエラーです。provenanceコメントでURLとcommitも確認できます。</p><p><code>python3 tools/amalgamate.py main.cpp -o submission.cpp</code></p></article>
+</main>
+</body>
+</html>

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Timer | AHC core</title>
+  <meta name="description" content="ahc::Timerで制限時間、残り時間、進み具合を測る。">
+  <style>
+    :root { color-scheme:light; --ink:#172033; --muted:#526078; --paper:#fff; --wash:#f3f7fc; --line:#cbd5e1; --blue:#075aa6; --dark:#063b70; --teal:#0f766e; --orange:#a24605; --focus:#9a3412; }
+    * { box-sizing:border-box; } body { margin:0; color:var(--ink); background:var(--wash); font:16px/1.7 system-ui,-apple-system,"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif; } a { color:var(--dark); text-underline-offset:3px; } a:hover { color:var(--orange); } a:focus-visible,summary:focus-visible { outline:3px solid var(--focus); outline-offset:3px; border-radius:4px; }
+    .skip { position:absolute; left:-9999px; } .skip:focus { left:1rem; top:1rem; z-index:5; padding:.4rem .8rem; color:#fff; background:var(--dark); } .wrap { width:min(920px,calc(100% - 2rem)); margin:auto; } header { color:#fff; background:linear-gradient(135deg,#063b70,#075aa6 60%,#0f766e); } header .wrap { padding:2.2rem 0 1.8rem; } .eyebrow { margin:0 0 .4rem; color:#dbeafe; font-weight:700; letter-spacing:.1em; } h1,h2,h3 { line-height:1.25; } h1 { margin:.1rem 0 .7rem; font-size:clamp(2rem,5vw,3.3rem); } h2 { margin:0 0 .8rem; font-size:clamp(1.4rem,3vw,2rem); } header p { max-width:720px; margin:.4rem 0; color:#eef6ff; } nav { border-top:1px solid #ffffff45; background:#031f3d48; } nav .wrap { display:flex; flex-wrap:wrap; gap:.5rem 1.2rem; padding:.65rem 0; } nav a { color:#fff; font-weight:700; } main { padding:2rem 0 4rem; } section { margin:0 0 2.2rem; } .card { padding:1.2rem; background:var(--paper); border:1px solid var(--line); border-radius:15px; box-shadow:0 8px 24px #0f172a16; } .diagram { margin:.5rem 0 1rem; padding:.5rem; border:1px solid var(--line); border-radius:10px; background:#fff; } svg { display:block; width:100%; height:auto; } table { width:100%; border-collapse:collapse; background:#fff; } th,td { padding:.65rem .7rem; border:1px solid var(--line); vertical-align:top; text-align:left; } th { color:#fff; background:var(--dark); } code { padding:.08rem .25rem; background:#e8eef7; border-radius:4px; } pre { overflow:auto; margin:.8rem 0 0; padding:1rem; color:#f8fafc; background:#111827; border-radius:10px; font:.9rem/1.55 ui-monospace,SFMono-Regular,Consolas,monospace; } .note { padding:.8rem 1rem; border-left:5px solid var(--teal); background:#e8f7f5; } .bad { border-left-color:var(--orange); background:#fff4e8; } .small { color:var(--muted); font-size:.92rem; } footer { padding:1.3rem 0 2.2rem; color:#fff; background:#172033; } footer a { color:#c6e2ff; } @media (max-width:560px) { body { font-size:15px; } .wrap { width:min(100% - 1.1rem,920px); } th,td { padding:.5rem; } }
+  </style>
+</head>
+<body><a class="skip" href="#main">本文へ移動</a>
+  <header><div class="wrap"><p class="eyebrow">AHC CORE / TIMER</p><h1>締切まで、あと何秒？</h1><p><code>ahc::Timer</code> は <code>steady_clock</code> を使う制限時間タイマーです。時計をテスト用に差し替えることもできます。</p></div><nav aria-label="ページ内ナビゲーション"><div class="wrap"><a href="index.html">core入口</a><a href="#use">使う</a><a href="#api">API</a><a href="#boundary">境界</a></div></nav></header>
+  <main id="main" class="wrap">
+    <section id="use" aria-labelledby="use-title"><h2 id="use-title">使い方</h2><div class="card"><div class="diagram"><svg viewBox="0 0 820 170" role="img" aria-labelledby="timeline-title timeline-desc"><title id="timeline-title">Timerの時間線</title><desc id="timeline-desc">開始から現在を経て締切へ進み、残り時間が短くなる図</desc><defs><marker id="a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="#075aa6"/></marker></defs><path d="M55 83H755" stroke="#075aa6" stroke-width="6" marker-end="url(#a)"/><circle cx="72" cy="83" r="14" fill="#0f766e"/><circle cx="470" cy="83" r="14" fill="#075aa6"/><circle cx="735" cy="83" r="14" fill="#a24605"/><text x="72" y="48" text-anchor="middle" font-size="18">start</text><text x="470" y="48" text-anchor="middle" font-size="18">now</text><text x="735" y="48" text-anchor="middle" font-size="18">deadline</text><path d="M472 117H733" stroke="#0f766e" stroke-width="4"/><text x="602" y="151" text-anchor="middle" font-size="17" fill="#0f766e">remaining()</text></svg></div><pre><code>#include "core/timer.hpp"
+#include &lt;chrono&gt;
+
+ahc::Timer timer(std::chrono::seconds(2));
+while (!timer.expired()) {
+  // ここで候補を1つ試す
+  double done = timer.progress(); // 0.0〜1.0
+  (void)done;
+}</code></pre><p class="small">`elapsed()` は経過時間、`remaining()` は残り時間です。単位は <code>std::chrono</code> の <code>duration</code> です。</p></div></section>
+
+    <section id="api" aria-labelledby="api-title"><h2 id="api-title">API</h2><div class="card"><table><caption class="small" style="caption-side:top;text-align:left;padding:.3rem 0">主なメソッド</caption><thead><tr><th scope="col">呼び出し</th><th scope="col">意味</th></tr></thead><tbody><tr><td><code>Timer(limit)</code></td><td>今から測定開始。<code>steady_clock</code>。</td></tr><tr><td><code>elapsed()</code></td><td>経過時間。制限時間を超えても増える。</td></tr><tr><td><code>remaining()</code></td><td>残り時間。0未満にはならない。</td></tr><tr><td><code>progress()</code></td><td>0.0〜1.0。締切後は1.0。</td></tr><tr><td><code>expired()</code></td><td>期限に達したら <code>true</code>。</td></tr><tr><td><code>reset()</code></td><td>今を新しい開始点にする。</td></tr></tbody></table><p class="note"><code>elapsed_at(time_point)</code>、<code>remaining_at</code>、<code>progress_at</code>、<code>expired_at</code> もあります。取得時刻を渡せるので、待たずにテストできます。</p></div></section>
+
+    <section id="test" aria-labelledby="test-title"><h2 id="test-title">テスト用の時計</h2><div class="card"><pre><code>struct FakeClock {
+  using duration = std::chrono::milliseconds;
+  using time_point = std::chrono::time_point&lt;FakeClock&gt;;
+  static time_point current;
+  static time_point now() { return current; }
+};
+// ahc::BasicTimer&lt;FakeClock&gt; timer(1s, FakeClock::current);
+// currentを進め、elapsed_at(current)を確認する。</code></pre><p class="small">実際の例は <a href="tests/timer_test.cpp">tests/timer_test.cpp</a> にあります。</p></div></section>
+
+    <section id="boundary" aria-labelledby="boundary-title"><h2 id="boundary-title">境界と失敗例</h2><div class="card"><p><strong>制限時間が0以下：</strong>0に正規化され、最初から <code>expired()==true</code>、<code>progress()==1.0</code> です。</p><p><strong>開始より前の時刻：</strong>テスト用の <code>elapsed_at</code> は0に張り付きます。残り時間は全量です。</p><p class="note bad"><strong>失敗：</strong><code>std::chrono::system_clock</code> の時刻を毎回読むと、OSの時刻補正で逆戻りすることがあります。締切判定には <code>Timer</code> を使います。</p><pre><code>// よくある間違い：秒の整数に丸めてから比較
+if (timer.elapsed().count() &gt; 2) { /* 1秒台も混ざる */ }
+// duration同士を比較する
+if (timer.elapsed() &gt;= std::chrono::seconds(2)) { /* 明確 */ }</code></pre></div></section>
+  </main><footer><div class="wrap"><p><a href="timer.hpp">timer.hppを見る</a>　<a href="index.html">core入口へ戻る</a></p></div></footer>
+</body>
+</html>

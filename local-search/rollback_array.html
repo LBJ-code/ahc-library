@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RollbackArray API | ahc-library</title>
+  <style>
+    :root { color-scheme:light dark; --bg:#f7f8fb; --fg:#172033; --card:#fff; --line:#c8d0df; --accent:#155eef; }
+    @media (prefers-color-scheme:dark) { :root { --bg:#111827; --fg:#edf2f7; --card:#1f2937; --line:#526071; --accent:#8ab4ff; } }
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.65 system-ui,sans-serif}main{max-width:900px;margin:auto;padding:clamp(1rem,4vw,3rem)}a{color:var(--accent)}.diagram{width:100%;height:auto;border:1px solid var(--line);border-radius:12px;background:var(--card)}pre{overflow:auto;padding:1rem;border-radius:10px;background:#111827;color:#f8fafc}code,pre{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.note{border-left:4px solid var(--accent);padding:.3rem 1rem;background:var(--card)}
+  </style>
+</head>
+<body><main>
+  <p><a href="index.html">← local-search</a></p>
+  <h1>rollback_array.hpp</h1>
+  <p>候補を配列へ適用し、残すなら <code>commit</code>、捨てるなら <code>rollback</code>。</p>
+  <svg class="diagram" viewBox="0 0 760 270" role="img" aria-labelledby="r-title r-desc">
+    <title id="r-title">snapshot から commit / rollback</title><desc id="r-desc">配列の初期値を snapshot し、候補変更後に二つの出口へ分岐する。</desc>
+    <g fill="none" stroke="currentColor" stroke-width="2"><path d="M150 125H265"/><path d="M420 125H485"/><path d="M485 125V75H610"/><path d="M485 125V185H610"/></g>
+    <g fill="var(--card)" stroke="currentColor" stroke-width="2"><rect x="25" y="85" width="125" height="80" rx="12"/><rect x="265" y="85" width="155" height="80" rx="12"/><rect x="610" y="35" width="120" height="80" rx="12"/><rect x="610" y="145" width="120" height="80" rx="12"/></g>
+    <g text-anchor="middle" fill="currentColor" font-size="19"><text x="87" y="118">snapshot</text><text x="87" y="146">[1, 2, 3]</text><text x="342" y="118">candidate</text><text x="342" y="146">[1, 9, 3]</text><text x="670" y="68">commit</text><text x="670" y="96">[1, 9, 3]</text><text x="670" y="178">rollback</text><text x="670" y="206">[1, 2, 3]</text></g>
+  </svg>
+  <h2>最小 API</h2>
+  <pre><code>ahc::RollbackArray&lt;int&gt; a{1, 2, 3};
+auto mark = a.snapshot();
+a[1] = 9;
+if (keep) a.commit(mark); else a.rollback(mark);</code></pre>
+  <ul><li>checkpoint は入れ子にできる。</li><li><code>at</code> は範囲外で <code>std::out_of_range</code>。</li><li>不正な / 使用済み token は <code>std::invalid_argument</code>。</li><li>非 const の配列アクセスは checkpoint ごとに差分を一度保存する。</li></ul>
+  <p class="note">snapshot 前に <code>T&amp;</code> を保持し、その参照で後から書くと記録できません。変更時に <code>a[i]</code>、<code>set</code>、<code>fill</code> を呼び直してください。</p>
+  <p><small>AI事前作成コード公開元: <a href="https://github.com/LBJ-code/ahc-library">https://github.com/LBJ-code/ahc-library</a></small></p>
+</main></body></html>

@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Annealing API | ahc-library</title>
+  <style>
+    :root { color-scheme:light dark; --bg:#f7f8fb; --fg:#172033; --card:#fff; --line:#c8d0df; --accent:#155eef; }
+    @media (prefers-color-scheme:dark) { :root { --bg:#111827; --fg:#edf2f7; --card:#1f2937; --line:#526071; --accent:#8ab4ff; } }
+    *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.65 system-ui,sans-serif} main{max-width:900px;margin:auto;padding:clamp(1rem,4vw,3rem)} a{color:var(--accent)} .diagram{width:100%;height:auto;border:1px solid var(--line);border-radius:12px;background:var(--card)} pre{overflow:auto;padding:1rem;border-radius:10px;background:#111827;color:#f8fafc} code,pre{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.note{border-left:4px solid var(--accent);padding:.3rem 1rem;background:var(--card)}
+  </style>
+</head>
+<body><main>
+  <p><a href="index.html">← local-search</a></p>
+  <h1>annealing.hpp</h1>
+  <p>温度と受理判定だけ。探索ループ、状態、近傍、タイマーは持ちません。</p>
+  <svg class="diagram" viewBox="0 0 760 240" role="img" aria-labelledby="a-title a-desc">
+    <title id="a-title">delta の符号と受理</title>
+    <desc id="a-desc">候補 score から現在 score を引いた delta を目的に合わせて判定する。</desc>
+    <g fill="none" stroke="currentColor" stroke-width="2"><path d="M160 120H300"/><path d="M460 120H600"/></g>
+    <g fill="var(--card)" stroke="currentColor" stroke-width="2"><rect x="30" y="75" width="130" height="90" rx="12"/><rect x="300" y="75" width="160" height="90" rx="12"/><rect x="600" y="75" width="130" height="90" rx="12"/></g>
+    <g text-anchor="middle" fill="currentColor" font-size="19"><text x="95" y="112">candidate</text><text x="95" y="140">− current</text><text x="380" y="112">Objective</text><text x="380" y="140">temperature</text><text x="665" y="112">accept?</text></g>
+    <text x="380" y="35" text-anchor="middle" fill="currentColor" font-size="18">delta は常に同じ定義</text>
+  </svg>
+  <h2>最小 API</h2>
+  <pre><code>std::mt19937_64 rng(seed);
+ahc::LinearTemperature temp(20.0, 0.01);
+double p = ahc::progress(elapsed_seconds, limit_seconds); // double
+double delta = candidate_score - current_score;
+bool ok = ahc::accept(ahc::Objective::minimize, delta, temp(p), rng);
+// 同じ rng seed と同じ呼出順なら同じ結果。</code></pre>
+  <ul><li><code>LinearTemperature(start, end)</code>: 直線補間。温度は 0 以上。</li><li><code>ExponentialTemperature(start, end)</code>: log 空間補間。両端は 0 より大きい。</li><li><code>accept_minimize(delta, t, rng)</code> / <code>accept_maximize</code> も利用可。</li><li>t が 0 以下・NaN は貪欲。大きな悪化量は <code>exp</code> せず対数比較。</li></ul>
+  <h2>失敗例</h2>
+  <p class="note"><code>maximize</code> でも <code>delta = candidate - current</code>。<code>current - candidate</code> にすると符号が逆です。</p>
+  <pre><code>// NG: delta = current - candidate; maximize に渡す
+// OK: delta = candidate - current; maximize に渡す</code></pre>
+  <p><small>AI事前作成コード公開元: <a href="https://github.com/LBJ-code/ahc-library">https://github.com/LBJ-code/ahc-library</a></small></p>
+</main></body></html>

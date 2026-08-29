@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BestSolution API | ahc-library</title>
+  <style>
+    :root { color-scheme:light dark; --bg:#f7f8fb; --fg:#172033; --card:#fff; --line:#c8d0df; --accent:#155eef; }
+    @media (prefers-color-scheme:dark) { :root { --bg:#111827; --fg:#edf2f7; --card:#1f2937; --line:#526071; --accent:#8ab4ff; } }
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.65 system-ui,sans-serif}main{max-width:900px;margin:auto;padding:clamp(1rem,4vw,3rem)}a{color:var(--accent)}.diagram{width:100%;height:auto;border:1px solid var(--line);border-radius:12px;background:var(--card)}pre{overflow:auto;padding:1rem;border-radius:10px;background:#111827;color:#f8fafc}code,pre{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.note{border-left:4px solid var(--accent);padding:.3rem 1rem;background:var(--card)}
+  </style>
+</head>
+<body><main>
+  <p><a href="index.html">← local-search</a></p>
+  <h1>best_solution.hpp</h1>
+  <p>マルチスタートで得た最良の <code>State</code> と score を一組だけ保持します。</p>
+  <svg class="diagram" viewBox="0 0 760 230" role="img" aria-labelledby="b-title b-desc">
+    <title id="b-title">候補と best の比較</title><desc id="b-desc">候補の状態とscoreをObjectiveで比較し、改善時だけbestへ保存する。</desc>
+    <g fill="none" stroke="currentColor" stroke-width="2"><path d="M160 115H290"/><path d="M470 115H600"/></g>
+    <g fill="var(--card)" stroke="currentColor" stroke-width="2"><rect x="30" y="70" width="130" height="90" rx="12"/><rect x="290" y="70" width="180" height="90" rx="12"/><rect x="600" y="70" width="130" height="90" rx="12"/></g>
+    <g text-anchor="middle" fill="currentColor" font-size="19"><text x="95" y="107">candidate</text><text x="95" y="135">State + score</text><text x="380" y="107">Objective</text><text x="380" y="135">strict compare</text><text x="665" y="107">best</text><text x="665" y="135">first tie</text></g>
+  </svg>
+  <h2>最小 API</h2>
+  <pre><code>ahc::BestSolution&lt;State&gt; best(ahc::Objective::minimize);
+if (best.consider(state, score)) { /* best が更新 */ }
+if (!best.empty()) use(best.state(), best.score());</code></pre>
+  <p class="note">score の同値は更新しません。最初に入った状態を残します。空の <code>state()</code> / <code>score()</code> は <code>std::logic_error</code> です。</p>
+  <p><small>AI事前作成コード公開元: <a href="https://github.com/LBJ-code/ahc-library">https://github.com/LBJ-code/ahc-library</a></small></p>
+</main></body></html>

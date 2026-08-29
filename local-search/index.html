@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>局所探索部品 | ahc-library</title>
+  <style>
+    :root { color-scheme: light dark; --bg:#f7f8fb; --fg:#172033; --card:#fff; --line:#c8d0df; --accent:#155eef; }
+    @media (prefers-color-scheme: dark) { :root { --bg:#111827; --fg:#edf2f7; --card:#1f2937; --line:#526071; --accent:#8ab4ff; } }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.65 system-ui,sans-serif; }
+    main { max-width:980px; margin:auto; padding:clamp(1rem,4vw,3rem); }
+    nav { display:flex; flex-wrap:wrap; gap:.8rem; margin:.5rem 0 2rem; }
+    nav a, .card { border:1px solid var(--line); border-radius:12px; background:var(--card); }
+    nav a { padding:.35rem .7rem; color:var(--accent); }
+    h1 { line-height:1.2; } h2 { margin-top:2.2rem; }
+    .diagram { width:100%; height:auto; border:1px solid var(--line); border-radius:12px; background:var(--card); }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1rem; }
+    .card { padding:1rem; } .card h3 { margin-top:0; }
+    code, pre { font-family:ui-monospace,SFMono-Regular,Consolas,monospace; }
+    pre { overflow:auto; padding:1rem; border-radius:10px; background:#111827; color:#f8fafc; }
+    a { color:var(--accent); }
+  </style>
+</head>
+<body>
+<main>
+  <header><p><a href="../README.md">ahc-library</a> / local-search</p><h1>局所探索を、5つの箱で書く</h1><p>Timer・状態・近傍は問題側。ここには温度、受理、集計、差分復元だけがあります。</p></header>
+  <nav aria-label="ページ内リンク"><a href="annealing.html">Annealing</a><a href="search_stats.html">Stats</a><a href="rollback_array.html">RollbackArray</a><a href="best_solution.html">BestSolution</a><a href="README.md">README</a></nav>
+  <svg class="diagram" viewBox="0 0 960 300" role="img" aria-labelledby="flow-title flow-desc">
+    <title id="flow-title">局所探索の一試行</title>
+    <desc id="flow-desc">進捗から温度を作り、近傍の差分を受理判定し、受理したときだけ適用して集計する流れ。</desc>
+    <defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="currentColor"/></marker></defs>
+    <g fill="none" stroke="currentColor" stroke-width="2" marker-end="url(#arrow)"><path d="M155 148H208"/><path d="M345 148H398"/><path d="M535 148H588"/><path d="M725 148H778"/></g>
+    <g fill="var(--card)" stroke="currentColor" stroke-width="2"><rect x="22" y="105" width="133" height="86" rx="12"/><rect x="212" y="105" width="133" height="86" rx="12"/><rect x="402" y="105" width="133" height="86" rx="12"/><rect x="592" y="105" width="133" height="86" rx="12"/><rect x="782" y="105" width="156" height="86" rx="12"/></g>
+    <g text-anchor="middle" fill="currentColor" font-size="20"><text x="88" y="140">Timer</text><text x="88" y="168">progress</text><text x="278" y="140">temperature</text><text x="278" y="168">linear / exp</text><text x="468" y="140">neighbor</text><text x="468" y="168">delta</text><text x="658" y="140">accept</text><text x="658" y="168">rng</text><text x="860" y="140">apply</text><text x="860" y="168">stats</text></g>
+    <text x="480" y="55" text-anchor="middle" fill="currentColor" font-size="24">candidate_score - current_score</text>
+  </svg>
+  <h2>どれを使う？</h2>
+  <section class="grid"><article class="card"><h3><a href="annealing.html">annealing.hpp</a></h3><p><code>progress</code>、温度スケジュール、<code>accept</code>。乱数は引数で注入。</p></article><article class="card"><h3><a href="search_stats.html">search_stats.hpp</a></h3><p><code>attempts</code>、<code>accepted</code>、<code>improved</code>、best、受理率。</p></article><article class="card"><h3><a href="rollback_array.html">rollback_array.hpp</a></h3><p>候補を試して、<code>rollback</code> または <code>commit</code>。</p></article><article class="card"><h3><a href="best_solution.html">best_solution.hpp</a></h3><p>最良の状態と score を一組だけ保存。</p></article></section>
+  <h2>最小ループ</h2>
+  <pre><code>const double p = timer.progress(); // core::Timer
+auto move = make_neighbor(state, rng);
+double candidate = evaluate_after(state, move);
+double delta = candidate - score;
+bool ok = ahc::accept(ahc::Objective::minimize, delta, temperature(p), rng);
+if (ok) { apply(state, move); score = candidate; }
+stats.observe(candidate, ok);</code></pre>
+  <p>改善は常に受理。悪化だけが温度と乱数で決まります。最大化でも <code>delta</code> は同じ符号です。</p>
+  <p><small>AI事前作成コード公開元: <a href="https://github.com/LBJ-code/ahc-library">https://github.com/LBJ-code/ahc-library</a></small></p>
+</main>
+</body>
+</html>

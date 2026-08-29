@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AHC core | Timer・Rng・Zobrist</title>
+  <meta name="description" content="AHCで使う時間計測、再現可能な乱数、Zobristハッシュの短い入門。">
+  <style>
+    :root { color-scheme:light; --ink:#172033; --muted:#526078; --paper:#fff; --wash:#f3f7fc; --line:#cbd5e1; --blue:#075aa6; --dark:#063b70; --teal:#0f766e; --orange:#a24605; --focus:#9a3412; }
+    * { box-sizing:border-box; } html { scroll-behavior:smooth; }
+    body { margin:0; color:var(--ink); background:var(--wash); font:16px/1.7 system-ui,-apple-system,"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif; }
+    a { color:var(--dark); text-underline-offset:3px; } a:hover { color:var(--orange); }
+    a:focus-visible,summary:focus-visible { outline:3px solid var(--focus); outline-offset:3px; border-radius:4px; }
+    .skip { position:absolute; left:-9999px; } .skip:focus { left:1rem; top:1rem; z-index:5; padding:.4rem .8rem; color:#fff; background:var(--dark); }
+    header { color:#fff; background:linear-gradient(135deg,#063b70,#075aa6 54%,#0f766e); }
+    .wrap { width:min(1080px,calc(100% - 2rem)); margin:auto; } header .wrap { padding:2.4rem 0 2rem; }
+    .eyebrow { margin:0 0 .4rem; color:#dbeafe; font-weight:700; letter-spacing:.1em; } h1,h2,h3 { line-height:1.25; }
+    h1 { max-width:800px; margin:.1rem 0 .7rem; font-size:clamp(2rem,5vw,3.5rem); } h2 { margin:0 0 1rem; font-size:clamp(1.4rem,3vw,2.1rem); } h3 { margin:.1rem 0 .4rem; }
+    header p { max-width:760px; margin:.4rem 0; color:#eef6ff; } nav { border-top:1px solid #ffffff45; background:#031f3d48; } nav .wrap { display:flex; flex-wrap:wrap; gap:.5rem 1.2rem; padding:.65rem 0; } nav a { color:#fff; font-weight:700; }
+    main { padding:2rem 0 4rem; } section { margin:0 0 2.4rem; } .intro { display:grid; grid-template-columns:minmax(0,1fr) minmax(290px,.85fr); gap:1rem; align-items:center; }
+    .lead { font-size:1.12rem; } .card { padding:1.2rem; background:var(--paper); border:1px solid var(--line); border-radius:15px; box-shadow:0 8px 24px #0f172a16; }
+    .grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1rem; } .diagram { margin:.8rem 0; padding:.45rem; background:#fff; border:1px solid var(--line); border-radius:10px; } svg { display:block; width:100%; height:auto; }
+    .tag { display:inline-block; padding:.1rem .5rem; color:#fff; background:var(--blue); border-radius:999px; font-size:.82rem; font-weight:700; } .choice { display:flex; flex-direction:column; } .choice p { color:var(--muted); } .choice a { margin-top:auto; font-weight:700; }
+    .note { padding:.8rem 1rem; border-left:5px solid var(--teal); background:#e8f7f5; } .small { color:var(--muted); font-size:.92rem; } pre { overflow:auto; margin:.8rem 0 0; padding:1rem; color:#f8fafc; background:#111827; border-radius:10px; font:.9rem/1.55 ui-monospace,SFMono-Regular,Consolas,monospace; } code { padding:.08rem .25rem; background:#e8eef7; border-radius:4px; }
+    footer { padding:1.4rem 0 2.3rem; color:#fff; background:#172033; } footer a { color:#c6e2ff; }
+    @media (max-width:800px) { .intro,.grid { grid-template-columns:1fr; } } @media (max-width:560px) { body { font-size:15px; } .wrap { width:min(100% - 1.1rem,1080px); } header .wrap { padding-top:1.8rem; } }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">本文へ移動</a>
+  <header><div class="wrap">
+    <p class="eyebrow">AHC CORE / C++23 / HEADER-ONLY</p>
+    <h1>「時間・乱数・状態」を、迷わず使う</h1>
+    <p>AHCのコードに何度も出てくる3つの道具です。前提知識は不要です。必要なページを1つ選び、ヘッダをincludeしてください。</p>
+  </div><nav aria-label="ページ内ナビゲーション"><div class="wrap"><a href="#choose">3つの道具</a><a href="#flow">組み合わせ方</a><a href="#start">最小例</a><a href="README.md">README</a></div></nav></header>
+
+  <main id="main" class="wrap">
+    <section id="choose" aria-labelledby="choose-title">
+      <h2 id="choose-title">何を使う？</h2>
+      <div class="grid">
+        <article class="card choice"><span class="tag">制限時間</span><h3>Timer</h3><p>単調に進む時計で、残り時間と進み具合を確認します。</p>
+          <div class="diagram"><svg viewBox="0 0 360 120" role="img" aria-labelledby="timer-title timer-desc"><title id="timer-title">時間線</title><desc id="timer-desc">開始から現在、締切までを示す線</desc><path d="M25 67H335" stroke="#075aa6" stroke-width="5"/><circle cx="44" cy="67" r="12" fill="#0f766e"/><circle cx="200" cy="67" r="12" fill="#075aa6"/><circle cx="315" cy="67" r="12" fill="#a24605"/><text x="44" y="39" text-anchor="middle" font-size="15">開始</text><text x="200" y="39" text-anchor="middle" font-size="15">今</text><text x="315" y="39" text-anchor="middle" font-size="15">締切</text><text x="257" y="97" text-anchor="middle" font-size="14" fill="#526078">remaining()</text></svg></div><a href="timer.html">Timerを読む →</a>
+        </article>
+        <article class="card choice"><span class="tag">試行・shuffle</span><h3>Rng</h3><p>seedを明示して、同じ実験を同じ順番で再現します。</p>
+          <div class="diagram"><svg viewBox="0 0 360 120" role="img" aria-labelledby="rng-title rng-desc"><title id="rng-title">乱数の再現</title><desc id="rng-desc">同じseedから同じ3つの数が出る図</desc><rect x="16" y="34" width="100" height="52" rx="10" fill="#e8f7f5" stroke="#0f766e" stroke-width="2"/><text x="66" y="66" text-anchor="middle" font-size="17">seed 42</text><path d="M116 60H174 M174 60l-9-7m9 7l-9 7" stroke="#075aa6" stroke-width="3"/><g fill="#9ec8f2" stroke="#075aa6"><rect x="184" y="22" width="47" height="34" rx="6"/><rect x="240" y="22" width="47" height="34" rx="6"/><rect x="296" y="22" width="47" height="34" rx="6"/></g><text x="207" y="45" text-anchor="middle" font-size="13">a</text><text x="263" y="45" text-anchor="middle" font-size="13">b</text><text x="319" y="45" text-anchor="middle" font-size="13">c</text><text x="263" y="89" text-anchor="middle" font-size="14" fill="#526078">毎回同じ列</text></svg></div><a href="rng.html">Rngを読む →</a>
+        </article>
+        <article class="card choice"><span class="tag">状態比較</span><h3>Zobrist</h3><p>特徴ごとの64bit値をXORし、状態をすばやく見分けます。</p>
+          <div class="diagram"><svg viewBox="0 0 360 120" role="img" aria-labelledby="z-title z-desc"><title id="z-title">Zobrist XOR</title><desc id="z-desc">3つの特徴トークンをXORしてハッシュを作る図</desc><g fill="#9ec8f2" stroke="#075aa6"><rect x="20" y="24" width="76" height="38" rx="7"/><rect x="124" y="24" width="76" height="38" rx="7"/><rect x="228" y="24" width="76" height="38" rx="7"/></g><text x="58" y="49" text-anchor="middle" font-size="14">位置A</text><text x="162" y="49" text-anchor="middle" font-size="14">位置B</text><text x="266" y="49" text-anchor="middle" font-size="14">位置C</text><path d="M58 62V85 M162 62V85 M266 62V85 M58 85H266" stroke="#0f766e" stroke-width="3" fill="none"/><rect x="101" y="87" width="122" height="25" rx="6" fill="#e8f7f5" stroke="#0f766e"/><text x="162" y="105" text-anchor="middle" font-size="14">hash = A⊕B⊕C</text></svg></div><a href="zobrist.html">Zobristを読む →</a>
+        </article>
+      </div>
+    </section>
+
+    <section id="flow" aria-labelledby="flow-title">
+      <h2 id="flow-title">AHCでの流れ</h2>
+      <div class="card"><div class="diagram"><svg viewBox="0 0 900 150" role="img" aria-labelledby="flow-svg-title flow-svg-desc"><title id="flow-svg-title">Timer・Rng・Zobristの役割</title><desc id="flow-svg-desc">制限時間内に乱数で候補を作り、Zobristで状態を識別する流れ</desc><defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="#075aa6"/></marker></defs><rect x="20" y="48" width="165" height="58" rx="12" fill="#e8f7f5" stroke="#0f766e" stroke-width="3"/><text x="102" y="83" text-anchor="middle" font-size="18">Timerで締切確認</text><path d="M185 77H270" stroke="#075aa6" stroke-width="3" marker-end="url(#arrow)"/><rect x="270" y="48" width="165" height="58" rx="12" fill="#eef6ff" stroke="#075aa6" stroke-width="3"/><text x="352" y="83" text-anchor="middle" font-size="18">Rngで候補作成</text><path d="M435 77H520" stroke="#075aa6" stroke-width="3" marker-end="url(#arrow)"/><rect x="520" y="48" width="165" height="58" rx="12" fill="#eef6ff" stroke="#075aa6" stroke-width="3"/><text x="602" y="83" text-anchor="middle" font-size="18">Zobristで比較</text><path d="M685 77H770" stroke="#075aa6" stroke-width="3" marker-end="url(#arrow)"/><rect x="770" y="48" width="110" height="58" rx="12" fill="#fff4e8" stroke="#a24605" stroke-width="3"/><text x="825" y="83" text-anchor="middle" font-size="18">更新</text></svg></div><p class="note">3つともオブジェクトが状態を持ちます。グローバル乱数やシステム時計に隠れて依存しません。</p></div>
+    </section>
+
+    <section id="start" aria-labelledby="start-title"><h2 id="start-title">最小例</h2><div class="card"><pre><code>#include "core/timer.hpp"
+#include "core/rng.hpp"
+
+ahc::Timer timer(std::chrono::seconds(2));
+ahc::Rng rng(1234);                 // seedを固定
+while (!timer.expired()) {
+  int action = rng.uniform_int(0, 4); // 0〜3。4は含まない
+  (void)action;
+}</code></pre><p class="small">詳しい境界、例外、テスト可能な時計は各ページへ。コンパイルにはC++23が必要です。</p></div></section>
+    <section aria-labelledby="links-title"><h2 id="links-title">コードとテスト</h2><div class="card"><p><a href="timer.hpp">timer.hpp</a> / <a href="rng.hpp">rng.hpp</a> / <a href="zobrist.hpp">zobrist.hpp</a></p><p><a href="tests/timer_test.cpp">Timer test</a> / <a href="tests/rng_test.cpp">Rng test</a> / <a href="tests/zobrist_test.cpp">Zobrist test</a></p><p class="small">AI事前作成コードの公開元: <a href="https://github.com/LBJ-code/ahc-library">https://github.com/LBJ-code/ahc-library</a></p></div></section>
+  </main>
+  <footer><div class="wrap"><p><strong>AHC core</strong> — 外部画像・外部CSSなし。スマートフォンでも読めます。</p></div></footer>
+</body>
+</html>

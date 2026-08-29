@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rng | AHC core</title>
+  <meta name="description" content="ahc::Rngでseed固定、整数半開区間、実数、Bernoulli、shuffleを使う。">
+  <style>
+    :root { color-scheme:light; --ink:#172033; --muted:#526078; --paper:#fff; --wash:#f3f7fc; --line:#cbd5e1; --blue:#075aa6; --dark:#063b70; --teal:#0f766e; --orange:#a24605; --focus:#9a3412; }
+    * { box-sizing:border-box; } body { margin:0; color:var(--ink); background:var(--wash); font:16px/1.7 system-ui,-apple-system,"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif; } a { color:var(--dark); text-underline-offset:3px; } a:hover { color:var(--orange); } a:focus-visible,summary:focus-visible { outline:3px solid var(--focus); outline-offset:3px; border-radius:4px; }
+    .skip { position:absolute; left:-9999px; } .skip:focus { left:1rem; top:1rem; z-index:5; padding:.4rem .8rem; color:#fff; background:var(--dark); } .wrap { width:min(920px,calc(100% - 2rem)); margin:auto; } header { color:#fff; background:linear-gradient(135deg,#063b70,#075aa6 60%,#0f766e); } header .wrap { padding:2.2rem 0 1.8rem; } .eyebrow { margin:0 0 .4rem; color:#dbeafe; font-weight:700; letter-spacing:.1em; } h1,h2,h3 { line-height:1.25; } h1 { margin:.1rem 0 .7rem; font-size:clamp(2rem,5vw,3.3rem); } h2 { margin:0 0 .8rem; font-size:clamp(1.4rem,3vw,2rem); } header p { max-width:720px; margin:.4rem 0; color:#eef6ff; } nav { border-top:1px solid #ffffff45; background:#031f3d48; } nav .wrap { display:flex; flex-wrap:wrap; gap:.5rem 1.2rem; padding:.65rem 0; } nav a { color:#fff; font-weight:700; } main { padding:2rem 0 4rem; } section { margin:0 0 2.2rem; } .card { padding:1.2rem; background:var(--paper); border:1px solid var(--line); border-radius:15px; box-shadow:0 8px 24px #0f172a16; } .diagram { margin:.5rem 0 1rem; padding:.5rem; border:1px solid var(--line); border-radius:10px; background:#fff; } svg { display:block; width:100%; height:auto; } table { width:100%; border-collapse:collapse; background:#fff; } th,td { padding:.65rem .7rem; border:1px solid var(--line); vertical-align:top; text-align:left; } th { color:#fff; background:var(--dark); } code { padding:.08rem .25rem; background:#e8eef7; border-radius:4px; } pre { overflow:auto; margin:.8rem 0 0; padding:1rem; color:#f8fafc; background:#111827; border-radius:10px; font:.9rem/1.55 ui-monospace,SFMono-Regular,Consolas,monospace; } .note { padding:.8rem 1rem; border-left:5px solid var(--teal); background:#e8f7f5; } .bad { border-left-color:var(--orange); background:#fff4e8; } .small { color:var(--muted); font-size:.92rem; } footer { padding:1.3rem 0 2.2rem; color:#fff; background:#172033; } footer a { color:#c6e2ff; } @media (max-width:560px) { body { font-size:15px; } .wrap { width:min(100% - 1.1rem,920px); } th,td { padding:.5rem; } }
+  </style>
+</head>
+<body><a class="skip" href="#main">本文へ移動</a>
+  <header><div class="wrap"><p class="eyebrow">AHC CORE / RNG</p><h1>同じseedなら、同じ挑戦</h1><p><code>ahc::Rng</code> は速い64bit乱数です。seedを必ず受け取り、状態をオブジェクト内だけに持ちます。</p></div><nav aria-label="ページ内ナビゲーション"><div class="wrap"><a href="index.html">core入口</a><a href="#use">使う</a><a href="#api">API</a><a href="#boundary">境界</a></div></nav></header>
+  <main id="main" class="wrap">
+    <section id="use" aria-labelledby="use-title"><h2 id="use-title">seedから値が出る</h2><div class="card"><div class="diagram"><svg viewBox="0 0 820 180" role="img" aria-labelledby="rng-flow-title rng-flow-desc"><title id="rng-flow-title">Rngの再現可能な列</title><desc id="rng-flow-desc">同じseedから同じ乱数列が生成され、別のseedなら別の列になる図</desc><rect x="30" y="25" width="140" height="52" rx="11" fill="#e8f7f5" stroke="#0f766e" stroke-width="3"/><text x="100" y="58" text-anchor="middle" font-size="19">seed = 42</text><path d="M170 51H285" stroke="#075aa6" stroke-width="4"/><path d="M277 44L287 51L277 58" fill="none" stroke="#075aa6" stroke-width="4"/><g fill="#9ec8f2" stroke="#075aa6" stroke-width="2"><rect x="302" y="24" width="100" height="54" rx="9"/><rect x="426" y="24" width="100" height="54" rx="9"/><rect x="550" y="24" width="100" height="54" rx="9"/></g><text x="352" y="58" text-anchor="middle" font-size="18">x₀</text><text x="476" y="58" text-anchor="middle" font-size="18">x₁</text><text x="600" y="58" text-anchor="middle" font-size="18">x₂</text><path d="M352 106V145M476 106V145M600 106V145" stroke="#0f766e" stroke-width="3"/><text x="476" y="171" text-anchor="middle" font-size="17" fill="#0f766e">同じseed・同じ呼び出し順 → 同じ列</text></svg></div><pre><code>#include "core/rng.hpp"
+#include &lt;algorithm&gt;
+#include &lt;vector&gt;
+
+ahc::Rng rng(42);
+int i = rng.uniform_int(0, 10); // 0〜9
+double x = rng.uniform_real(0.0, 1.0); // 0以上1未満
+bool ok = rng.bernoulli(0.2); // trueの確率 0.2
+std::shuffle(v.begin(), v.end(), rng);</code></pre><p class="small">`Rng` は標準のURBGです。`std::shuffle` に直接渡せます。</p></div></section>
+
+    <section id="api" aria-labelledby="api-title"><h2 id="api-title">APIと区間</h2><div class="card"><table><caption class="small" style="caption-side:top;text-align:left;padding:.3rem 0">上端を含む？</caption><thead><tr><th scope="col">API</th><th scope="col">範囲・条件</th></tr></thead><tbody><tr><td><code>uniform_int(low, high)</code></td><td><strong>[low, high)</strong>。整数。<code>low &lt; high</code>。</td></tr><tr><td><code>uniform_real(low, high)</code></td><td><strong>[low, high)</strong>。有限な浮動小数。<code>low &lt; high</code>。</td></tr><tr><td><code>bernoulli(p)</code></td><td><code>p</code> は <strong>[0, 1]</strong>。p=0は常にfalse、p=1は常にtrue。</td></tr><tr><td><code>unit()</code></td><td><strong>[0, 1)</strong> のdouble。</td></tr><tr><td><code>operator()()</code></td><td>全ビットを使える <code>uint64_t</code>。seed列の基本単位。</td></tr></tbody></table><p class="note">同じseed・同じ呼び出し順なら同じ値です。別の標準ライブラリに依存する分布クラスを使わず、ここで区間と再現性を定めています。</p></div></section>
+
+    <section id="boundary" aria-labelledby="boundary-title"><h2 id="boundary-title">境界と失敗例</h2><div class="card"><div class="diagram"><svg viewBox="0 0 820 150" role="img" aria-labelledby="interval-title interval-desc"><title id="interval-title">半開区間</title><desc id="interval-desc">lowは含み、highは含まない数直線</desc><path d="M65 76H760" stroke="#075aa6" stroke-width="5"/><circle cx="190" cy="76" r="13" fill="#0f766e"/><circle cx="630" cy="76" r="13" fill="#fff" stroke="#a24605" stroke-width="5"/><text x="190" y="42" text-anchor="middle" font-size="18">low（含む）</text><text x="630" y="42" text-anchor="middle" font-size="18">high（含まない）</text><path d="M205 108H615" stroke="#0f766e" stroke-width="5"/><text x="410" y="138" text-anchor="middle" font-size="17" fill="#0f766e">[ low, high )</text></svg></div><p class="note bad"><strong>失敗：</strong><code>uniform_int(0, 4)</code> で4も出ると思う。実際は0,1,2,3だけです。4種類のActionならこの書き方が安全です。</p><p class="note bad"><strong>失敗：</strong>範囲を逆にして自動修正を期待する。<code>low &gt;= high</code>、非有限の実数、確率が0未満/1超は <code>std::invalid_argument</code> です。</p><pre><code>try {
+  rng.uniform_int(4, 0); // 例外。黙って交換しない
+} catch (const std::invalid_argument&amp;) {
+  // 入力・定数のバグを直す
+}</code></pre></div></section>
+
+    <section aria-labelledby="seed-title"><h2 id="seed-title">seedの扱い</h2><div class="card"><p>本番で結果を再現したいなら、入力値や実験番号からseedを作って記録します。並列化する場合はスレッドごとに別の <code>Rng</code> を作ります。隠れた共有乱数はありません。</p><p class="small">実行可能な確認は <a href="tests/rng_test.cpp">tests/rng_test.cpp</a> にあります。</p></div></section>
+  </main><footer><div class="wrap"><p><a href="rng.hpp">rng.hppを見る</a>　<a href="index.html">core入口へ戻る</a></p></div></footer>
+</body>
+</html>

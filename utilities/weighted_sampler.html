@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>weighted_sampler.hpp | AHC library</title>
+  <style>
+    :root { color-scheme:light dark; --bg:#f7f8fa; --fg:#18202a; --card:#fff; --line:#cbd5e1; --accent:#b45309; }
+    @media (prefers-color-scheme:dark) { :root { --bg:#111827; --fg:#edf2f7; --card:#1f2937; --line:#4b5563; --accent:#fbbf24; } }
+    * { box-sizing:border-box; } body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.65 system-ui,sans-serif; }
+    main { width:min(900px,92vw); margin:auto; padding:2rem 0 3rem; } nav { display:flex; flex-wrap:wrap; gap:.8rem; } a { color:var(--accent); }
+    code,pre { background:#0001; border-radius:5px; } code { padding:.1em .3em; } pre { padding:1rem; overflow:auto; border:1px solid var(--line); }
+    svg { display:block; width:100%; height:auto; margin:1rem 0; background:var(--card); border:1px solid var(--line); border-radius:12px; }
+    .note { border-left:4px solid var(--accent); padding:.2rem 1rem; background:var(--card); }
+  </style>
+</head>
+<body>
+<main>
+  <nav aria-label="ページ"><a href="index.html">utilities一覧</a><a href="README.md">README</a><a href="permutation_ops.html">前: permutation</a><a href="../tools/index.html">提出ツール</a></nav>
+  <h1>weighted_sampler.hpp — 重みで1つ選ぶ</h1>
+  <p>重みが大きい候補ほど選ばれます。内部のFenwick treeが累積和を持つので、更新も抽選もO(log n)です。</p>
+  <svg viewBox="0 0 760 300" role="img" aria-labelledby="weight-title weight-desc">
+    <title id="weight-title">重みを区間として選ぶ図</title>
+    <desc id="weight-desc">候補A,B,Cの重み1,2,4を一本の区間に並べ、乱数の位置からCを選ぶ</desc>
+    <text x="30" y="35" font-size="19">重み: A=1　B=2　C=4</text>
+    <rect x="30" y="75" width="90" height="70" fill="#94a3b8"/><rect x="120" y="75" width="180" height="70" fill="#60a5fa"/><rect x="300" y="75" width="360" height="70" fill="#f59e0b"/>
+    <g fill="#111827" font-size="24" text-anchor="middle"><text x="75" y="119">A</text><text x="210" y="119">B</text><text x="480" y="119">C</text></g>
+    <path d="M525 52V165" stroke="#b91c1c" stroke-width="4"/><path d="M525 52l-8 12h16zM525 165l-8-12h16z" fill="#b91c1c"/>
+    <text x="540" y="205" fill="#b91c1c" font-size="18">乱数の位置 → C</text>
+    <g stroke="currentColor" stroke-width="1" opacity=".5"><path d="M30 155V175M120 155V175M300 155V175M660 155V175"/></g>
+    <g font-size="16" text-anchor="middle"><text x="30" y="195">0</text><text x="120" y="195">1</text><text x="300" y="195">3</text><text x="660" y="195">7</text></g>
+  </svg>
+  <h2>使い方</h2>
+  <pre><code>#include "utilities/weighted_sampler.hpp"
+
+ahc::WeightedSampler<double> sampler({1.0, 0.0, 3.0});
+sampler.set(1, 2.0); // 候補1を更新（O(log n)）
+std::mt19937_64 rng(seed);
+auto index = sampler.sample(rng); // std::optional&lt;size_t&gt;
+auto fixed = sampler.sample_with([] { return 0.25L; }); // 乱数注入</code></pre>
+  <p class="note">重みは有限の非負値だけです。総和0なら<code>std::nullopt</code>、乱数0は最初の正の重み、乱数1は最後の正の重みを選びます。</p>
+  <h2>計算量と更新</h2>
+  <p><code>set</code>/<code>update</code>/<code>add</code>と抽選はO(log n)。初期化と<code>assign</code>はO(n)です。標準URBGか、[0,1]を返すcallableを注入できます。</p>
+  <p><a href="grid.html">gridへ →</a>　<a href="permutation_ops.html">permutationへ →</a></p>
+</main>
+</body>
+</html>

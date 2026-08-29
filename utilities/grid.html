@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>grid.hpp | AHC library</title>
+  <style>
+    :root { color-scheme:light dark; --bg:#f7f8fa; --fg:#18202a; --card:#fff; --line:#cbd5e1; --accent:#0f766e; }
+    @media (prefers-color-scheme:dark) { :root { --bg:#111827; --fg:#edf2f7; --card:#1f2937; --line:#4b5563; --accent:#5eead4; } }
+    * { box-sizing:border-box; } body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.65 system-ui,sans-serif; }
+    main { width:min(900px,92vw); margin:auto; padding:2rem 0 3rem; } nav { display:flex; flex-wrap:wrap; gap:.8rem; }
+    a { color:var(--accent); } code,pre { background:#0001; border-radius:5px; } code { padding:.1em .3em; } pre { padding:1rem; overflow:auto; border:1px solid var(--line); }
+    svg { display:block; width:100%; height:auto; margin:1rem 0; background:var(--card); border:1px solid var(--line); border-radius:12px; }
+    .note { border-left:4px solid var(--accent); padding:.2rem 1rem; background:var(--card); }
+  </style>
+</head>
+<body>
+<main>
+  <nav aria-label="ページ"><a href="index.html">utilities一覧</a><a href="README.md">README</a><a href="permutation_ops.html">次: permutation</a><a href="../tools/index.html">提出ツール</a></nav>
+  <h1>grid.hpp — 点と近傍</h1>
+  <p><code>Point{row, col}</code>は盤面の1マスです。<code>r/c</code>と<code>x/y</code>も同じ順で使えます。</p>
+  <svg viewBox="0 0 640 300" role="img" aria-labelledby="grid-title grid-desc">
+    <title id="grid-title">中心点と4近傍</title>
+    <desc id="grid-desc">中心の点2,3から上下左右へ1マス動いた点</desc>
+    <g stroke="currentColor" stroke-opacity=".28" stroke-width="1"><path d="M80 40H560M80 100H560M80 160H560M80 220H560M80 280H560M80 40V280M200 40V280M320 40V280M440 40V280M560 40V280"/></g>
+    <g fill="#0f766e"><circle cx="320" cy="160" r="25"/><circle cx="320" cy="100" r="18"/><circle cx="440" cy="160" r="18"/><circle cx="320" cy="220" r="18"/><circle cx="200" cy="160" r="18"/></g>
+    <g fill="white" font-size="16" text-anchor="middle"><text x="320" y="166">(2,3)</text><text x="320" y="106">上</text><text x="440" y="166">右</text><text x="320" y="226">下</text><text x="200" y="166">左</text></g>
+  </svg>
+  <h2>使い方</h2>
+  <pre><code>#include "utilities/grid.hpp"
+
+ahc::Point p{2, 3};
+if (ahc::inside(p, height, width)) {
+    for (ahc::Point q : ahc::neighbors4(p, height, width)) {
+        // 盤面内の q だけが来る
+    }
+}
+long long d = ahc::manhattan_distance(p, ahc::Point{0, 0});</code></pre>
+  <p class="note"><code>neighbors4(p)</code>は上下左右の4点をそのまま返します。<code>neighbors4(p,h,w)</code>は盤面外を除いた<code>vector</code>です。8方向版も同じです。</p>
+  <h2>境界と計算量</h2>
+  <p><code>inside</code>は負の行・列、0以下の高さ・幅を<code>false</code>にします。近傍生成は最大8点なのでO(1)、距離もO(1)です。座標の比較はrow、次にcolの辞書順です。</p>
+  <p><a href="permutation_ops.html">permutation_ops.hppへ →</a>　<a href="weighted_sampler.html">weighted_sampler.hppへ →</a></p>
+</main>
+</body>
+</html>
