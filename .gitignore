@@ -1,0 +1,16 @@
+.agents/
+.codex/
+.git-local/
+
+# Build outputs
+target/
+build/
+cmake-build-*/
+*.o
+*.out
+
+# Editor and OS files
+.idea/
+.vscode/
+*.swp
+.DS_Store
