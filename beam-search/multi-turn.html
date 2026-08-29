@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>複数ターン版 | 1 Actionで先へ進むビームサーチ</title>
+  <meta name="description" content="1つのActionが複数ターン先へ進む差分更新ビームサーチ。step、MultiSelectors、遅延削除を図で説明します。">
+  <style>
+    :root { color-scheme:light; --ink:#172033; --muted:#46536a; --paper:#fff; --wash:#f3f7fc; --line:#cbd5e1; --blue:#075aa6; --blue-dark:#063b70; --teal:#0f766e; --orange:#a24605; --pink:#a11b57; --focus:#9a3412; --shadow:0 10px 28px rgba(15,23,42,.10); }
+    * { box-sizing:border-box; } body { margin:0; color:var(--ink); background:var(--wash); font:16px/1.72 system-ui,-apple-system,"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif; } a { color:var(--blue-dark); text-underline-offset:3px; } a:hover { color:var(--pink); } a:focus-visible,summary:focus-visible { outline:3px solid var(--focus); outline-offset:3px; border-radius:4px; } .skip { position:absolute; left:-9999px; } .skip:focus { left:1rem; top:1rem; z-index:9; padding:.4rem .8rem; color:#fff; background:var(--blue-dark); }
+    header { color:#fff; background:linear-gradient(135deg,#063b70,#075aa6 60%,#0f766e); } .wrap { width:min(1100px,calc(100% - 2rem)); margin:auto; } header .wrap { padding:2.25rem 0 1.8rem; } .eyebrow { margin:0 0 .5rem; color:#dbeafe; font-size:.88rem; letter-spacing:.1em; font-weight:700; } h1,h2,h3 { line-height:1.25; } h1 { max-width:850px; margin:.1rem 0 .7rem; font-size:clamp(2rem,5vw,3.4rem); } h2 { margin:0 0 1rem; font-size:clamp(1.45rem,3vw,2.05rem); } h3 { margin:.1rem 0 .45rem; font-size:1.18rem; } header p { max-width:770px; margin:.4rem 0; color:#eef6ff; }
+    nav { border-top:1px solid rgba(255,255,255,.28); background:rgba(3,31,61,.28); } nav .wrap { display:flex; flex-wrap:wrap; gap:.45rem 1rem; padding:.7rem 0; } nav a { color:#fff; font-weight:700; }
+    main { padding:2rem 0 4rem; } section { margin:0 0 2.5rem; } .card { padding:1.25rem; background:var(--paper); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); } .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; } .intro { display:grid; grid-template-columns:minmax(0,1fr) minmax(310px,.95fr); align-items:center; gap:1rem; } .lead { font-size:1.12rem; } .note { padding:.85rem 1rem; border-left:5px solid var(--teal); background:#e8f7f5; } .warning { padding:.85rem 1rem; border-left:5px solid var(--orange); background:#fff8ed; } .diagram { margin:1rem 0; padding:.45rem; background:#fff; border:1px solid var(--line); border-radius:12px; } svg { display:block; width:100%; height:auto; } .small { color:var(--muted); font-size:.92rem; } .legend { display:flex; flex-wrap:wrap; gap:.45rem 1rem; margin:.7rem 0 0; color:var(--muted); font-size:.9rem; } .legend span::before { content:""; display:inline-block; width:.8rem; height:.8rem; margin-right:.35rem; vertical-align:-.05em; border-radius:3px; background:var(--line); } .legend .tree::before { background:#9ec8f2; } .legend .wait::before { background:#f5cf76; } .legend .live::before { background:#85d9cf; }
+    .flow { display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:.5rem; margin:1rem 0; } .step { padding:.55rem .8rem; border:2px solid var(--blue); border-radius:10px; background:#eef6ff; font-weight:700; text-align:center; } .arrow { color:var(--orange); font-size:1.5rem; font-weight:900; } table { width:100%; border-collapse:collapse; background:var(--paper); } th,td { padding:.7rem .75rem; border:1px solid var(--line); vertical-align:top; text-align:left; } th { color:#fff; background:var(--blue-dark); } code { padding:.1rem .3rem; color:#172033; background:#e8eef7; border-radius:4px; } pre { margin:.8rem 0 0; padding:1rem; overflow:auto; color:#f8fafc; background:#111827; border-radius:10px; font:.9rem/1.55 ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace; } ul,ol { padding-left:1.35rem; } .source { margin-top:1rem; padding:1rem; color:var(--ink); background:#fff8ed; border:1px solid #efc58e; border-radius:12px; } footer { padding:1.7rem 0 2.5rem; color:#fff; background:#172033; } footer a { color:#c6e2ff; } footer p { margin:.45rem 0; }
+    @media (max-width:800px) { .intro,.grid { grid-template-columns:1fr; } } @media (max-width:560px) { body { font-size:15px; } .wrap { width:min(100% - 1.1rem,1100px); } header .wrap { padding-top:1.8rem; } th,td { padding:.55rem; } }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">本文へ移動</a>
+  <header><div class="wrap">
+    <p class="eyebrow">02 / 1 ACTIONで複数ターン</p>
+    <h1>時間を飛び越えるAction</h1>
+    <p>移動の予約、複数年のシミュレーション、完了まで数ターンかかる操作。1つのActionが2ターン以上先へ進む問題には、この版を使います。</p>
+  </div><nav aria-label="ページ移動"><div class="wrap"><a href="index.html">← 3方式の入口</a><a href="#picture">図で理解</a><a href="#todo">TODO</a><a href="#use">最小利用</a><a href="#errors">失敗例</a><a href="euler-tour-edges.html">次：Euler Tour版 →</a></div></nav></header>
+
+  <main id="main" class="wrap">
+    <section class="intro" id="picture" aria-labelledby="picture-title">
+      <div><h2 id="picture-title">stepごとに候補を待たせる</h2>
+        <p class="lead">通常版は次のターンの候補を1列に置きます。この版は、<code>step=1</code>、<code>step=2</code>、…を別々の <code>Selector</code> に入れ、時間が来た列から取り出します。</p>
+        <p class="note"><strong>向いている用途：</strong>Actionごとに進むターン数が違う問題。1ターンにそろえるためのダミーActionを大量に作りたくないとき。</p>
+      </div>
+      <figure class="diagram">
+        <svg viewBox="0 0 720 350" role="img" aria-labelledby="time-title time-desc">
+          <title id="time-title">複数ターンActionとSelectorの待ち行列</title>
+          <desc id="time-desc">時間の線にstep 1、step 2、step 3のActionがあり、それぞれの候補が対応するSelectorの列に待つ図。</desc>
+          <defs><marker id="arrow-m" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8Z" fill="#075aa6"/></marker></defs>
+          <text x="22" y="27" font-size="18" font-weight="700" fill="#063b70">時間</text><path d="M82 62H682" stroke="#075aa6" stroke-width="4" marker-end="url(#arrow-m)"/>
+          <g font-size="14" text-anchor="middle" fill="#172033"><text x="110" y="89">0</text><text x="230" y="89">1</text><text x="350" y="89">2</text><text x="470" y="89">3</text><text x="590" y="89">4</text></g>
+          <g stroke="#075aa6" stroke-width="3"><path d="M110 62V125"/><path d="M230 62V125"/><path d="M350 62V125"/><path d="M470 62V125"/><path d="M590 62V125"/></g>
+          <rect x="115" y="106" width="105" height="39" rx="8" fill="#85d9cf" stroke="#0f766e" stroke-width="2"/><text x="167" y="131" text-anchor="middle" font-size="14" fill="#172033">A / step 1</text>
+          <rect x="115" y="160" width="225" height="39" rx="8" fill="#f5cf76" stroke="#a24605" stroke-width="2"/><text x="227" y="185" text-anchor="middle" font-size="14" fill="#172033">B / step 2（時刻2へ）</text>
+          <rect x="115" y="214" width="345" height="39" rx="8" fill="#f5cf76" stroke="#a24605" stroke-width="2"/><text x="287" y="239" text-anchor="middle" font-size="14" fill="#172033">C / step 3（時刻3へ）</text>
+          <path d="M465 180H525" stroke="#0f766e" stroke-width="3" marker-end="url(#arrow-m)"/><rect x="525" y="150" width="170" height="112" rx="12" fill="#eef6ff" stroke="#075aa6" stroke-width="2"/><text x="610" y="178" text-anchor="middle" font-size="17" fill="#172033">MultiSelectors</text><text x="610" y="205" text-anchor="middle" font-size="14" fill="#46536a">列1：A</text><text x="610" y="228" text-anchor="middle" font-size="14" fill="#a24605">列2：B</text><text x="610" y="251" text-anchor="middle" font-size="14" fill="#a24605">列3：C</text>
+          <text x="22" y="304" font-size="14" fill="#46536a">step は「何ターン後のSelectorに入れるか」。通常のActionは1。</text>
+        </svg>
+        <figcaption class="small">Bの結果は時刻2、Cの結果は時刻3に取り出されます。結果のState・Evaluator・Hashも、その時刻のものにします。</figcaption>
+      </figure>
+    </section>
+
+    <section aria-labelledby="role-title"><h2 id="role-title">何が通常版と違うか</h2>
+      <div class="grid"><article class="card"><h3>MultiSelectors</h3><p><code>push(..., step)</code> が <code>step</code> 番目のSelectorへ候補を送ります。ビーム幅とHashMapは各Selectorごとに独立しています。毎ターン、先頭のSelectorを <code>pop_selector()</code> で使います。</p></article><article class="card"><h3>遅延削除</h3><p>先へ飛ぶActionの子がまだ後のSelectorに残っています。葉をすぐ消すと親への道が失われます。<code>remove_check_turn</code> で、子が追加される可能性がなくなってから削除します。</p></article></div>
+      <div class="diagram"><svg viewBox="0 0 720 240" role="img" aria-labelledby="delay-title delay-desc"><title id="delay-title">葉の遅延削除</title><desc id="delay-desc">step 3の枝は現在のターンでは不要に見えるが、未来の候補が追加されるまで葉を残す図。</desc><defs><marker id="arr-delay" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8Z" fill="#075aa6"/></marker></defs><path d="M80 122H225 M225 122L340 62 M225 122L340 182" stroke="#075aa6" stroke-width="3" fill="none" marker-end="url(#arr-delay)"/><circle cx="80" cy="122" r="27" fill="#85d9cf" stroke="#0f766e" stroke-width="3"/><text x="80" y="128" text-anchor="middle" font-size="15">親</text><rect x="297" y="42" width="142" height="42" rx="9" fill="#9ec8f2" stroke="#075aa6" stroke-width="2"/><text x="368" y="68" text-anchor="middle" font-size="14" fill="#172033">step 1の子</text><rect x="297" y="162" width="142" height="42" rx="9" fill="#f5cf76" stroke="#a24605" stroke-width="2"/><text x="368" y="188" text-anchor="middle" font-size="14" fill="#172033">step 3の子</text><path d="M450 182H650" stroke="#a24605" stroke-width="3" stroke-dasharray="8 7" marker-end="url(#arr-delay)"/><text x="550" y="157" text-anchor="middle" font-size="15" fill="#a24605">未来に候補が追加される</text><text x="550" y="213" text-anchor="middle" font-size="14" fill="#46536a">remove_check_turn まで残す</text></svg></div>
+    </section>
+
+    <section id="todo" aria-labelledby="todo-title"><h2 id="todo-title">埋めるTODO</h2>
+      <div class="card"><table><caption class="small" style="caption-side:top;text-align:left;padding:.4rem 0">通常版に加えて確認する点</caption><thead><tr><th scope="col">場所</th><th scope="col">あなたが決めること</th><th scope="col">守ること</th></tr></thead><tbody>
+        <tr><th scope="row"><code>Hash / Action</code></th><td>複数ターン後の状態を表す情報。</td><td>Nodeにコピーされるので小さく。Actionが進むターン数を持つ設計なら、意味を一つに決める。</td></tr>
+        <tr><th scope="row"><code>Evaluator</code></th><td>Action実行後の状態を評価する値。</td><td>小さいほど良い。stepが違っても同じ基準で比較する。</td></tr>
+        <tr><th scope="row"><code>State::expand</code></th><td>Actionごとに状態を進め、<code>multi_selectors.push(action, evaluator, hash, parent, finished, step)</code> を呼ぶ。</td><td><code>step</code> は1以上。Evaluator・HashはActionが完了した先の状態に対応させる。</td></tr>
+        <tr><th scope="row"><code>move_forward/backward</code></th><td>複数ターン分のActionを適用・取り消す。</td><td>forward後にexpandし、木を戻るときbackwardする。途中状態を残すならAction設計に含める。</td></tr>
+        <tr><th scope="row">完成判定</th><td><code>finished</code> をtrueにする条件。</td><td>ターン数最小化型で、実行可能解がそのActionで完成したときだけtrue。</td></tr>
+      </tbody></table></div>
+      <p class="warning"><strong>stepの注意：</strong><code>step=3</code> は「候補を3回Selectorへ入れる」という意味ではありません。現在のStateから、3ターン後の結果へ進むActionであることを、State・Evaluator・Hashの3つでそろえてください。</p>
+    </section>
+
+    <section id="use" aria-labelledby="use-title"><h2 id="use-title">最小利用手順</h2>
+      <div class="card"><div class="flow" aria-label="複数ターン版の実行手順"><span class="step">Stateとroot</span><span class="arrow" aria-hidden="true">→</span><span class="step">expandでstepを付ける</span><span class="arrow" aria-hidden="true">→</span><span class="step">Selector列から順に処理</span><span class="arrow" aria-hidden="true">→</span><span class="step">Action列</span></div>
+      <pre><code>#include "beam-search/multi-turn.hpp"
+
+using namespace beam_search;
+
+Config config{/* max_turn */ 200, /* beam_width */ 300,
+              /* nodes_capacity */ 80000, /* hash_map_capacity */ 8192};
+State state{/* input */};
+Evaluator initial_evaluator{/* initial state */};
+Hash initial_hash = /* initial stateのhash */;
+Node root(Action{}, initial_evaluator, initial_hash);
+vector&lt;Action&gt; answer = beam_search(config, state, root);</code></pre>
+      <p class="small"><code>State::expand</code> の中で、通常の一手なら <code>step=1</code>、2ターン先へ進むなら <code>step=2</code> のように渡します。最終ターンにはSelectorの最良候補を返すため、候補が空にならない設計が必要です。</p></div>
+    </section>
+
+    <section id="errors" aria-labelledby="errors-title"><h2 id="errors-title">典型的な失敗</h2>
+      <div class="grid"><article class="card"><h3>stepと状態の時間がずれる</h3><p><code>step=3</code> と言いながら1ターン後のEvaluatorを渡すと、未来の候補を間違った評価で比べます。Action適用後の「完了時点」を一つのテストで確認します。</p></article><article class="card"><h3>飛ぶ枝を早く削除する</h3><p>stepが大きい枝は、今ターンのselectorに現れなくても後で子を生みます。<code>remove_check_turn</code> の考え方を壊さないようにします。</p></article><article class="card"><h3>step=0や過大なstep</h3><p><code>step=0</code> は列の意味を壊します。残りの探索ターンを超えるstepを許すなら、その扱いを問題側で決めます。</p></article><article class="card"><h3>候補ゼロのまま最終ターン</h3><p>最終ターンの <code>calc_best_candidate()</code> は候補がある前提です。Actionを全て弾く条件、容量不足、finished判定を切り分けます。</p></article></div>
+    </section>
+
+    <section aria-labelledby="source-title"><h2 id="source-title">実装本体と出典</h2><div class="source"><p><strong>ソース：</strong><a href="multi-turn.hpp">multi-turn.hpp</a>（このページの説明と対応するヘッダ）</p><p><strong>原著者：</strong><code>eijirou_kyopro</code>（eijirou）<br><strong>記事：</strong><a href="https://eijirou-kyopro.hatenablog.com/entry/2024/02/01/115639">差分更新ビームサーチの記事</a><br><strong>取得日：</strong>2026-08-29（JST）</p><p>記事本文の「ソースコードはプログラミングコンテストで自由に利用可能」という条件に基づきます。公開リポジトリへのコピー利用許諾は、依頼者から「著者本人に確認済み」と申告されています。標準ライセンスの明示はありません。再利用時は <a href="NOTICE.md">NOTICE.md</a> と原著者表示を保持してください。</p></div></section>
+  </main>
+  <footer><div class="wrap"><p><strong>複数ターン版：1 Actionで先へ進む</strong></p><p><a href="index.html">入口へ戻る</a> ／ <a href="double-linked-object-pool.html">通常版</a> ／ <a href="euler-tour-edges.html">Euler Tour版</a></p><p class="small" style="color:#dbeafe">このページは使い方のガイドです。TODOを埋め、stepごとの状態と候補がそろうことをテストしてください。</p></div></footer>
+</body>
+</html>

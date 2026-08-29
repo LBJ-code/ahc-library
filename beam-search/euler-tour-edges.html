@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Euler Tour版 | 辺を配列で持つビームサーチ</title>
+  <meta name="description" content="二重連鎖木とObjectPoolを使わず、Euler Tourの前進辺・後退辺を配列で持つ差分更新ビームサーチの説明。">
+  <style>
+    :root { color-scheme:light; --ink:#172033; --muted:#46536a; --paper:#fff; --wash:#f3f7fc; --line:#cbd5e1; --blue:#075aa6; --blue-dark:#063b70; --teal:#0f766e; --orange:#a24605; --pink:#a11b57; --focus:#9a3412; --shadow:0 10px 28px rgba(15,23,42,.10); }
+    * { box-sizing:border-box; } body { margin:0; color:var(--ink); background:var(--wash); font:16px/1.72 system-ui,-apple-system,"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif; } a { color:var(--blue-dark); text-underline-offset:3px; } a:hover { color:var(--pink); } a:focus-visible,summary:focus-visible { outline:3px solid var(--focus); outline-offset:3px; border-radius:4px; } .skip { position:absolute; left:-9999px; } .skip:focus { left:1rem; top:1rem; z-index:9; padding:.4rem .8rem; color:#fff; background:var(--blue-dark); }
+    header { color:#fff; background:linear-gradient(135deg,#063b70,#075aa6 60%,#0f766e); } .wrap { width:min(1100px,calc(100% - 2rem)); margin:auto; } header .wrap { padding:2.25rem 0 1.8rem; } .eyebrow { margin:0 0 .5rem; color:#dbeafe; font-size:.88rem; letter-spacing:.1em; font-weight:700; } h1,h2,h3 { line-height:1.25; } h1 { max-width:850px; margin:.1rem 0 .7rem; font-size:clamp(2rem,5vw,3.4rem); } h2 { margin:0 0 1rem; font-size:clamp(1.45rem,3vw,2.05rem); } h3 { margin:.1rem 0 .45rem; font-size:1.18rem; } header p { max-width:770px; margin:.4rem 0; color:#eef6ff; }
+    nav { border-top:1px solid rgba(255,255,255,.28); background:rgba(3,31,61,.28); } nav .wrap { display:flex; flex-wrap:wrap; gap:.45rem 1rem; padding:.7rem 0; } nav a { color:#fff; font-weight:700; }
+    main { padding:2rem 0 4rem; } section { margin:0 0 2.5rem; } .card { padding:1.25rem; background:var(--paper); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); } .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; } .intro { display:grid; grid-template-columns:minmax(0,1fr) minmax(310px,.95fr); align-items:center; gap:1rem; } .lead { font-size:1.12rem; } .note { padding:.85rem 1rem; border-left:5px solid var(--teal); background:#e8f7f5; } .warning { padding:.85rem 1rem; border-left:5px solid var(--orange); background:#fff8ed; } .diagram { margin:1rem 0; padding:.45rem; background:#fff; border:1px solid var(--line); border-radius:12px; } svg { display:block; width:100%; height:auto; } .small { color:var(--muted); font-size:.92rem; } .legend { display:flex; flex-wrap:wrap; gap:.45rem 1rem; margin:.7rem 0 0; color:var(--muted); font-size:.9rem; } .legend span::before { content:""; display:inline-block; width:.8rem; height:.8rem; margin-right:.35rem; vertical-align:-.05em; border-radius:3px; background:var(--line); } .legend .forward::before { background:#9ec8f2; } .legend .leaf::before { background:#85d9cf; } .legend .backward::before { background:#f5cf76; }
+    .flow { display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:.5rem; margin:1rem 0; } .step { padding:.55rem .8rem; border:2px solid var(--blue); border-radius:10px; background:#eef6ff; font-weight:700; text-align:center; } .arrow { color:var(--orange); font-size:1.5rem; font-weight:900; } table { width:100%; border-collapse:collapse; background:var(--paper); } th,td { padding:.7rem .75rem; border:1px solid var(--line); vertical-align:top; text-align:left; } th { color:#fff; background:var(--blue-dark); } code { padding:.1rem .3rem; color:#172033; background:#e8eef7; border-radius:4px; } pre { margin:.8rem 0 0; padding:1rem; overflow:auto; color:#f8fafc; background:#111827; border-radius:10px; font:.9rem/1.55 ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace; } ul,ol { padding-left:1.35rem; } .source { margin-top:1rem; padding:1rem; color:var(--ink); background:#fff8ed; border:1px solid #efc58e; border-radius:12px; } footer { padding:1.7rem 0 2.5rem; color:#fff; background:#172033; } footer a { color:#c6e2ff; } footer p { margin:.45rem 0; }
+    @media (max-width:800px) { .intro,.grid { grid-template-columns:1fr; } } @media (max-width:560px) { body { font-size:15px; } .wrap { width:min(100% - 1.1rem,1100px); } header .wrap { padding-top:1.8rem; } th,td { padding:.55rem; } }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">本文へ移動</a>
+  <header><div class="wrap">
+    <p class="eyebrow">03 / EULER TOURの辺配列</p>
+    <h1>木を「辺の列」として持つ</h1>
+    <p>親・子・兄弟のリンクを持つNodeを作らず、深さ優先で歩くときの前進と後退を配列に保存します。メモリを軽くしたいときの版です。</p>
+  </div><nav aria-label="ページ移動"><div class="wrap"><a href="index.html">← 3方式の入口</a><a href="#picture">図で理解</a><a href="#todo">TODO</a><a href="#use">最小利用</a><a href="#errors">失敗例</a><a href="double-linked-object-pool.html">前：通常版 →</a></div></nav></header>
+
+  <main id="main" class="wrap">
+    <section class="intro" id="picture" aria-labelledby="picture-title">
+      <div><h2 id="picture-title">Euler Tourは「歩き方」の記録</h2>
+        <p class="lead">深さ優先で木を歩くと、枝を進む回数と戻る回数が決まります。その順番を <code>curr_tour_</code> に並べ、同じ <code>State</code> を前後させます。</p>
+        <p class="note"><strong>向いている用途：</strong>ObjectPoolや4本のリンクを持つNodeを避けたいとき。配列を連続して扱い、メモリ使用量を抑えたいとき。</p>
+      </div>
+      <figure class="diagram">
+        <svg viewBox="0 0 720 380" role="img" aria-labelledby="tour-title tour-desc">
+          <title id="tour-title">Euler Tourの前進辺・葉・後退辺</title>
+          <desc id="tour-desc">rootからAへ進み葉Bを調べ、Aを戻る。その後Cへ進み葉Dを調べ、Cを戻る。下に同じ歩き方を表す配列を示す図。</desc>
+          <defs><marker id="arrow-e" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8Z" fill="#075aa6"/></marker><marker id="arrow-o" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8Z" fill="#a24605"/></marker></defs>
+          <text x="17" y="27" font-size="18" font-weight="700" fill="#063b70">実際の木</text>
+          <path d="M120 77V140 M120 140L55 223 M120 140L185 223" stroke="#075aa6" stroke-width="3" fill="none" marker-end="url(#arrow-e)"/><circle cx="120" cy="62" r="27" fill="#85d9cf" stroke="#0f766e" stroke-width="3"/><text x="120" y="68" text-anchor="middle" font-size="15">root</text><rect x="10" y="223" width="90" height="43" rx="9" fill="#9ec8f2" stroke="#075aa6" stroke-width="2"/><text x="55" y="250" text-anchor="middle" font-size="14" fill="#172033">Aの親</text><rect x="140" y="223" width="90" height="43" rx="9" fill="#9ec8f2" stroke="#075aa6" stroke-width="2"/><text x="185" y="250" text-anchor="middle" font-size="14" fill="#172033">Cの親</text><path d="M55 280V307H185V280" fill="none" stroke="#a24605" stroke-width="3" marker-end="url(#arrow-o)"/><text x="120" y="334" text-anchor="middle" font-size="14" fill="#a24605">後退して次の枝へ</text>
+          <path d="M280 80H680" stroke="#075aa6" stroke-width="3" marker-end="url(#arrow-e)"/><text x="280" y="55" font-size="18" font-weight="700" fill="#063b70">curr_tour_（順番）</text>
+          <g font-size="14" text-anchor="middle"><rect x="282" y="95" width="92" height="54" rx="8" fill="#9ec8f2" stroke="#075aa6" stroke-width="2"/><text x="328" y="118" fill="#172033">(-1, A)</text><text x="328" y="139" fill="#46536a">forward</text><rect x="382" y="95" width="92" height="54" rx="8" fill="#85d9cf" stroke="#0f766e" stroke-width="2"/><text x="428" y="118" fill="#172033">(0, B)</text><text x="428" y="139" fill="#46536a">葉を評価</text><rect x="482" y="95" width="92" height="54" rx="8" fill="#f5cf76" stroke="#a24605" stroke-width="2"/><text x="528" y="118" fill="#172033">(-2, A)</text><text x="528" y="139" fill="#46536a">backward</text><rect x="582" y="95" width="92" height="54" rx="8" fill="#9ec8f2" stroke="#075aa6" stroke-width="2"/><text x="628" y="118" fill="#172033">(-1, C)</text><text x="628" y="139" fill="#46536a">forward</text></g>
+          <g font-size="14" text-anchor="middle"><rect x="332" y="185" width="92" height="54" rx="8" fill="#85d9cf" stroke="#0f766e" stroke-width="2"/><text x="378" y="208" fill="#172033">(1, D)</text><text x="378" y="229" fill="#46536a">葉を評価</text><rect x="432" y="185" width="92" height="54" rx="8" fill="#f5cf76" stroke="#a24605" stroke-width="2"/><text x="478" y="208" fill="#172033">(-2, C)</text><text x="478" y="229" fill="#46536a">backward</text></g>
+          <text x="280" y="286" font-size="15" fill="#172033">-1 = 前進辺　　葉index ≥ 0 = 葉　　-2 = 後退辺</text><text x="280" y="317" font-size="14" fill="#46536a">葉のタプルは「その葉へ進むAction」とEvaluator/Hashの番号。</text>
+        </svg>
+        <figcaption class="small">実装では <code>leaf_index</code> が負かどうかで、前進・葉・後退を判定します。葉を処理するときのforward/backwardは内部で対になります。</figcaption>
+      </figure>
+    </section>
+
+    <section aria-labelledby="role-title"><h2 id="role-title">配列で木を更新する</h2>
+      <div class="grid"><article class="card"><h3>leaves_ と buckets_</h3><p><code>leaves_</code> は現在の葉のEvaluator/Hashです。新しい候補は <code>candidate.parent</code> の番号ごとに <code>buckets_</code> へ分け、次のTourを組み立てます。ここでのparentはNode IDではなく、現在の葉の番号です。</p></article><article class="card"><h3>direct_road_ と path</h3><p>分岐のない一本道は <code>direct_road_</code> に移し、毎回同じ区間を歩く量を減らします。解を返すときはforwardでActionを足し、backwardで最後のActionを引きます。</p></article></div>
+      <div class="diagram"><svg viewBox="0 0 720 260" role="img" aria-labelledby="update-title update-desc"><title id="update-title">候補から次のEuler Tourを作る</title><desc id="update-desc">現在の葉番号ごとに候補をバケットへ分け、前進辺、葉、後退辺を再構築する流れ。</desc><defs><marker id="arr-u" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8Z" fill="#075aa6"/></marker></defs><rect x="20" y="72" width="175" height="112" rx="12" fill="#eef6ff" stroke="#075aa6" stroke-width="2"/><text x="107" y="104" text-anchor="middle" font-size="18" fill="#172033">Selectorの候補</text><text x="107" y="133" text-anchor="middle" font-size="14" fill="#46536a">parent = 0, 1, …</text><text x="107" y="160" text-anchor="middle" font-size="14" fill="#46536a">Action / Evaluator / Hash</text><path d="M195 128H270" stroke="#075aa6" stroke-width="3" marker-end="url(#arr-u)"/><rect x="270" y="72" width="175" height="112" rx="12" fill="#fff8ed" stroke="#a24605" stroke-width="2"/><text x="357" y="104" text-anchor="middle" font-size="18" fill="#172033">buckets_</text><text x="357" y="133" text-anchor="middle" font-size="14" fill="#46536a">親0 → 候補A,B</text><text x="357" y="160" text-anchor="middle" font-size="14" fill="#46536a">親1 → 候補C</text><path d="M445 128H520" stroke="#075aa6" stroke-width="3" marker-end="url(#arr-u)"/><rect x="520" y="44" width="180" height="168" rx="12" fill="#e8f7f5" stroke="#0f766e" stroke-width="2"/><text x="610" y="76" text-anchor="middle" font-size="18" fill="#172033">next_tour_</text><text x="610" y="111" text-anchor="middle" font-size="14" fill="#075aa6">-1 親へ進む</text><text x="610" y="139" text-anchor="middle" font-size="14" fill="#0f766e">0, 1 葉を評価</text><text x="610" y="167" text-anchor="middle" font-size="14" fill="#a24605">-2 親へ戻る</text></svg></div>
+    </section>
+
+    <section id="todo" aria-labelledby="todo-title"><h2 id="todo-title">埋めるTODO</h2>
+      <div class="card"><table><caption class="small" style="caption-side:top;text-align:left;padding:.4rem 0">Euler Tour版で必要なもの</caption><thead><tr><th scope="col">場所</th><th scope="col">あなたが決めること</th><th scope="col">守ること</th></tr></thead><tbody>
+        <tr><th scope="row"><code>Hash</code></th><td>状態を表すハッシュの型と更新。</td><td>同じ状態を同じ値にする。衝突時の扱いも考える。</td></tr>
+        <tr><th scope="row"><code>Action</code></th><td>操作の内容。<code>operator==</code> も実装。</td><td>Tour更新がAction同士を比較する。既定コンストラクタも初期化する。</td></tr>
+        <tr><th scope="row"><code>Evaluator</code></th><td>状態の評価情報と <code>evaluate()</code>。</td><td>小さいほど良い。葉配列に多数コピーされるので小さく。</td></tr>
+        <tr><th scope="row"><code>State::make_initial_node</code></th><td>初期Stateの <code>{Evaluator, Hash}</code> を返す。</td><td>この版はroot Nodeを引数に取らない。初期値はここで作る。</td></tr>
+        <tr><th scope="row"><code>State::expand</code></th><td>Actionを列挙し、forward後の値を <code>selector.push(Candidate, finished)</code> へ渡す。</td><td><code>Candidate.parent</code> は現在の葉番号。Selectorへ渡すCandidateの順序と意味を崩さない。</td></tr>
+        <tr><th scope="row"><code>move_forward/backward</code></th><td>Actionの差分を適用・取り消す。</td><td>Tourの -1 と -2 が対になり、同じStateに戻る。</td></tr>
+      </tbody></table></div>
+      <p class="warning"><strong>記号の注意：</strong>-1は前進、-2は後退です。Actionの値が-1や-2という意味ではありません。これは <code>curr_tour_</code> の第一要素（leaf_index）専用の印です。</p>
+    </section>
+
+    <section id="use" aria-labelledby="use-title"><h2 id="use-title">最小利用手順</h2>
+      <div class="card"><div class="flow" aria-label="Euler Tour版の実行手順"><span class="step">Stateを作る</span><span class="arrow" aria-hidden="true">→</span><span class="step">make_initial_node</span><span class="arrow" aria-hidden="true">→</span><span class="step">Tourを再構築</span><span class="arrow" aria-hidden="true">→</span><span class="step">Action列</span></div>
+      <pre><code>#include "beam-search/euler-tour-edges.hpp"
+
+using namespace beam_search;
+
+Config config{/* max_turn */ 100, /* beam_width */ 200,
+              /* tour_capacity */ 100000, /* hash_map_capacity */ 4096};
+State state{/* input */};
+vector&lt;Action&gt; answer = beam_search(config, state);</code></pre>
+      <p class="small">この版の初期Evaluator/Hashは <code>State::make_initial_node()</code> が返します。<code>tour_capacity</code> は前進辺・後退辺・葉のタプルを含むTour全体の予約容量です。</p></div>
+    </section>
+
+    <section id="errors" aria-labelledby="errors-title"><h2 id="errors-title">典型的な失敗</h2>
+      <div class="grid"><article class="card"><h3>parentをNode IDと思う</h3><p><code>buckets_[candidate.parent]</code> の番号は、現在の <code>leaves_</code> における葉番号です。Candidateを作るときに、別の配列の番号を渡さないでください。</p></article><article class="card"><h3>forwardとbackwardが対でない</h3><p>Tourを一周したあとStateが初期状態に戻るか確認します。配列・評価・hashを比較すると差分漏れを見つけやすくなります。</p></article><article class="card"><h3>Actionの等値比較がない</h3><p><code>Action::operator==</code> は一本道の圧縮で使います。比較が常にfalseだと、Tourが必要以上に長くなることがあります。</p></article><article class="card"><h3>容量・ライブラリ不足</h3><p><code>tour_capacity</code> と <code>hash_map_capacity</code> を小さくしすぎないでください。Selectorは <code>atcoder::segtree</code> を使うため、AtCoder Libraryが見えるコンパイル環境も必要です。</p></article></div>
+    </section>
+
+    <section aria-labelledby="source-title"><h2 id="source-title">実装本体と出典</h2><div class="source"><p><strong>ソース：</strong><a href="euler-tour-edges.hpp">euler-tour-edges.hpp</a>（このページの説明と対応するヘッダ）</p><p><strong>原著者：</strong><code>eijirou_kyopro</code>（eijirou）<br><strong>記事：</strong><a href="https://eijirou-kyopro.hatenablog.com/entry/2024/02/01/115639">差分更新ビームサーチの記事</a><br><strong>取得日：</strong>2026-08-29（JST）</p><p>記事本文の「ソースコードはプログラミングコンテストで自由に利用可能」という条件に基づきます。公開リポジトリへのコピー利用許諾は、依頼者から「著者本人に確認済み」と申告されています。標準ライセンスの明示はありません。再利用時は <a href="NOTICE.md">NOTICE.md</a> と原著者表示を保持してください。</p></div></section>
+  </main>
+  <footer><div class="wrap"><p><strong>Euler Tour版：辺を配列で持つ</strong></p><p><a href="index.html">入口へ戻る</a> ／ <a href="double-linked-object-pool.html">通常版</a> ／ <a href="multi-turn.html">複数ターン版</a></p><p class="small" style="color:#dbeafe">このページは使い方のガイドです。TODOを埋め、Tour一周後にStateが戻ることをテストしてください。</p></div></footer>
+</body>
+</html>

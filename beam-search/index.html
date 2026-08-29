@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>差分更新ビームサーチ | 3つのC++テンプレート</title>
+  <meta name="description" content="差分更新ビームサーチの3つのC++実装を、探索木、ビーム幅、Euler Tourの図で短く学ぶ入口ページ。">
+  <style>
+    :root { color-scheme: light; --ink:#172033; --muted:#46536a; --paper:#ffffff; --wash:#f3f7fc; --line:#cbd5e1; --blue:#075aa6; --blue-dark:#063b70; --teal:#0f766e; --orange:#a24605; --pink:#a11b57; --focus:#9a3412; --shadow:0 10px 28px rgba(15,23,42,.10); }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { margin:0; color:var(--ink); background:var(--wash); font:16px/1.72 system-ui,-apple-system,"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif; }
+    a { color:var(--blue-dark); text-underline-offset:3px; }
+    a:hover { color:var(--pink); }
+    a:focus-visible, summary:focus-visible { outline:3px solid var(--focus); outline-offset:3px; border-radius:4px; }
+    .skip { position:absolute; left:-9999px; top:auto; }
+    .skip:focus { left:1rem; top:1rem; z-index:9; padding:.4rem .8rem; color:#fff; background:var(--blue-dark); }
+    header { color:#fff; background:linear-gradient(135deg,#063b70 0%,#075aa6 55%,#0f766e 100%); }
+    .wrap { width:min(1100px,calc(100% - 2rem)); margin:auto; }
+    header .wrap { padding:2.5rem 0 2.2rem; }
+    .eyebrow { margin:0 0 .45rem; color:#dbeafe; font-size:.88rem; letter-spacing:.1em; font-weight:700; }
+    h1,h2,h3 { line-height:1.25; letter-spacing:.01em; }
+    h1 { max-width:850px; margin:.1rem 0 .8rem; font-size:clamp(2rem,5vw,3.55rem); }
+    h2 { margin:0 0 1rem; font-size:clamp(1.45rem,3vw,2.1rem); }
+    h3 { margin:.1rem 0 .45rem; font-size:1.2rem; }
+    header p { max-width:760px; margin:.45rem 0; color:#eef6ff; }
+    nav { border-top:1px solid rgba(255,255,255,.28); background:rgba(3,31,61,.28); }
+    nav .wrap { display:flex; flex-wrap:wrap; gap:.45rem 1rem; padding:.7rem 0; }
+    nav a { color:#fff; font-weight:700; }
+    main { padding:2rem 0 4rem; }
+    section { margin:0 0 2.5rem; }
+    .card { padding:1.25rem; background:var(--paper); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); }
+    .grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1rem; }
+    .grid.two { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .intro { display:grid; grid-template-columns:minmax(0,1fr) minmax(300px, .86fr); align-items:center; gap:1rem; }
+    .lead { font-size:1.13rem; }
+    .note { padding:.85rem 1rem; border-left:5px solid var(--teal); background:#e8f7f5; }
+    .choice { display:flex; flex-direction:column; min-height:100%; }
+    .choice .tag { align-self:flex-start; padding:.15rem .55rem; color:#fff; background:var(--blue); border-radius:999px; font-size:.8rem; font-weight:700; }
+    .choice p { margin:.35rem 0 .7rem; color:var(--muted); }
+    .choice a.more { display:inline-block; margin-top:auto; font-weight:700; }
+    .diagram { margin:1rem 0; padding:.45rem; background:#fff; border:1px solid var(--line); border-radius:12px; }
+    svg { display:block; width:100%; height:auto; }
+    .diagram svg { max-height:360px; }
+    .legend { display:flex; flex-wrap:wrap; gap:.45rem 1rem; margin:.7rem 0 0; color:var(--muted); font-size:.9rem; }
+    .legend span::before { content:""; display:inline-block; width:.8rem; height:.8rem; margin-right:.35rem; vertical-align:-.05em; border-radius:3px; background:var(--line); }
+    .legend .good::before { background:#85d9cf; } .legend .keep::before { background:#9ec8f2; } .legend .drop::before { background:#e7b08e; }
+    .flow { display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:.5rem; margin:1rem 0; }
+    .flow > * { flex:0 1 auto; }
+    .step { padding:.55rem .8rem; border:2px solid var(--blue); border-radius:10px; background:#eef6ff; font-weight:700; text-align:center; }
+    .arrow { color:var(--orange); font-size:1.5rem; font-weight:900; }
+    table { width:100%; border-collapse:collapse; background:var(--paper); }
+    th,td { padding:.7rem .75rem; border:1px solid var(--line); vertical-align:top; text-align:left; }
+    th { color:#fff; background:var(--blue-dark); }
+    code { padding:.1rem .3rem; color:#172033; background:#e8eef7; border-radius:4px; }
+    pre { margin:.8rem 0 0; padding:1rem; overflow:auto; color:#f8fafc; background:#111827; border-radius:10px; font: .9rem/1.55 ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace; }
+    .small { color:var(--muted); font-size:.92rem; }
+    .source { margin-top:1rem; padding:1rem; color:var(--ink); background:#fff8ed; border:1px solid #efc58e; border-radius:12px; }
+    footer { padding:1.7rem 0 2.5rem; color:#fff; background:#172033; }
+    footer a { color:#c6e2ff; }
+    footer p { margin:.45rem 0; }
+    @media (max-width:800px) { .intro,.grid.two { grid-template-columns:1fr; } .grid { grid-template-columns:1fr; } }
+    @media (max-width:560px) { body { font-size:15px; } header .wrap { padding-top:1.8rem; } .wrap { width:min(100% - 1.1rem,1100px); } th,td { padding:.55rem; } }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">本文へ移動</a>
+  <header>
+    <div class="wrap">
+      <p class="eyebrow">BEAM SEARCH / 差分更新</p>
+      <h1>候補を残しながら、速く先を読む</h1>
+      <p>これは、探索木を毎回作り直さずに使い回すC++テンプレートの案内です。前提知識は不要です。まず「どの版を選ぶか」だけ決めてください。</p>
+    </div>
+    <nav aria-label="ページ内ナビゲーション"><div class="wrap">
+      <a href="#idea">まず仕組み</a><a href="#choose">3方式の選び方</a><a href="#common">共通のTODO</a><a href="#start">最小の始め方</a>
+    </div></nav>
+  </header>
+
+  <main id="main" class="wrap">
+    <section id="idea" class="intro" aria-labelledby="idea-title">
+      <div>
+        <h2 id="idea-title">ビームサーチは「上位だけ残す」探索</h2>
+        <p class="lead">1手ごとに候補を広げ、評価のよい候補を <strong>ビーム幅</strong> 個だけ残します。全部を覚えないので、速く動きます。</p>
+        <p class="note"><strong>差分更新</strong>とは、次の状態を最初から計算せず、今の状態へ「Actionの変更分」だけ足し引きすることです。</p>
+      </div>
+      <figure class="diagram">
+        <svg viewBox="0 0 720 330" role="img" aria-labelledby="beam-title beam-desc">
+          <title id="beam-title">探索木とビーム幅</title>
+          <desc id="beam-desc">左の現在状態から4つの候補へ枝分かれし、評価のよい3つを青と緑で残し、1つをオレンジで捨てる図。</desc>
+          <defs><marker id="arr" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8Z" fill="#075aa6"/></marker></defs>
+          <rect x="20" y="124" width="150" height="66" rx="12" fill="#e8f7f5" stroke="#0f766e" stroke-width="3"/>
+          <text x="95" y="151" text-anchor="middle" font-size="20" fill="#172033">現在の状態</text><text x="95" y="176" text-anchor="middle" font-size="16" fill="#46536a">1個</text>
+          <g stroke="#075aa6" stroke-width="3" marker-end="url(#arr)"><path d="M170 150 L280 55"/><path d="M170 150 L280 125"/><path d="M170 150 L280 205"/><path d="M170 150 L280 275"/></g>
+          <g font-size="16" text-anchor="middle">
+            <rect x="280" y="24" width="130" height="58" rx="10" fill="#9ec8f2" stroke="#075aa6" stroke-width="2"/><text x="345" y="59" fill="#172033">候補 A</text>
+            <rect x="280" y="95" width="130" height="58" rx="10" fill="#9ec8f2" stroke="#075aa6" stroke-width="2"/><text x="345" y="130" fill="#172033">候補 B</text>
+            <rect x="280" y="176" width="130" height="58" rx="10" fill="#85d9cf" stroke="#0f766e" stroke-width="2"/><text x="345" y="211" fill="#172033">候補 C</text>
+            <rect x="280" y="247" width="130" height="58" rx="10" fill="#e7b08e" stroke="#a24605" stroke-width="2"/><text x="345" y="282" fill="#172033">候補 D</text>
+          </g>
+          <path d="M410 55 L500 100 M410 125 L500 130 M410 205 L500 160" fill="none" stroke="#0f766e" stroke-width="3" marker-end="url(#arr)"/>
+          <rect x="500" y="88" width="195" height="110" rx="14" fill="#f0fdfa" stroke="#0f766e" stroke-width="3"/>
+          <text x="597" y="124" text-anchor="middle" font-size="19" fill="#172033">次のビーム</text><text x="597" y="153" text-anchor="middle" font-size="16" fill="#46536a">幅 = 3</text><text x="597" y="179" text-anchor="middle" font-size="15" fill="#0f766e">A・B・Cを保持</text>
+          <text x="457" y="267" font-size="15" fill="#a24605">Dは評価が悪く、捨てる</text>
+        </svg>
+        <figcaption class="small">評価値は小さいほどよい。幅が大きいほど精度とメモリは増えます。</figcaption>
+      </figure>
+    </section>
+
+    <section id="choose" aria-labelledby="choose-title">
+      <h2 id="choose-title">3方式の選び方</h2>
+      <div class="grid">
+        <article class="card choice">
+          <span class="tag">通常版</span>
+          <h3>二重連鎖木 + ObjectPool</h3>
+          <p>まず試す版。探索木をノードとして持ち、親・子・左右の兄弟をリンクします。</p>
+          <div class="diagram"><svg viewBox="0 0 360 130" role="img" aria-label="二重連鎖木の小さな図"><path d="M180 28V62 M180 62L100 101 M180 62L260 101" stroke="#075aa6" stroke-width="3" fill="none"/><circle cx="180" cy="26" r="18" fill="#85d9cf"/><circle cx="100" cy="101" r="18" fill="#9ec8f2"/><circle cx="260" cy="101" r="18" fill="#9ec8f2"/><text x="180" y="32" text-anchor="middle" font-size="14">親</text><text x="100" y="106" text-anchor="middle" font-size="12">子</text><text x="260" y="106" text-anchor="middle" font-size="12">子</text></svg></div>
+          <a class="more" href="double-linked-object-pool.html">通常版を読む →</a>
+        </article>
+        <article class="card choice">
+          <span class="tag">複数ターン</span>
+          <h3>1 Actionで先へ飛ぶ</h3>
+          <p>1回のActionが2ターン以上進む問題向け。先の候補をターン別の待ち行列へ分けます。</p>
+          <div class="diagram"><svg viewBox="0 0 360 130" role="img" aria-label="複数ターンの時間線"><path d="M35 86H320" stroke="#075aa6" stroke-width="4"/><path d="M82 86V48 M194 86V48 M278 86V48" stroke="#0f766e" stroke-width="4"/><circle cx="82" cy="86" r="10" fill="#0f766e"/><circle cx="194" cy="86" r="10" fill="#0f766e"/><circle cx="278" cy="86" r="10" fill="#0f766e"/><text x="82" y="34" text-anchor="middle" font-size="14">1手</text><text x="194" y="34" text-anchor="middle" font-size="14">3手</text><text x="278" y="34" text-anchor="middle" font-size="14">4手</text><text x="82" y="112" text-anchor="middle" font-size="13">時刻0</text><text x="194" y="112" text-anchor="middle" font-size="13">+2</text><text x="278" y="112" text-anchor="middle" font-size="13">+1</text></svg></div>
+          <a class="more" href="multi-turn.html">複数ターン版を読む →</a>
+        </article>
+        <article class="card choice">
+          <span class="tag">省メモリ</span>
+          <h3>Euler Tourの辺配列</h3>
+          <p>木のリンクを持たず、前進辺・後退辺を並べます。配列中心で軽くしたいときに向きます。</p>
+          <div class="diagram"><svg viewBox="0 0 360 130" role="img" aria-label="Euler Tourの前進辺と後退辺"><path d="M35 70H90L140 35L190 70L240 105L320 70" stroke="#075aa6" stroke-width="4" fill="none"/><circle cx="35" cy="70" r="9" fill="#0f766e"/><circle cx="90" cy="70" r="9" fill="#9ec8f2"/><circle cx="140" cy="35" r="9" fill="#9ec8f2"/><circle cx="190" cy="70" r="9" fill="#9ec8f2"/><circle cx="240" cy="105" r="9" fill="#e7b08e"/><text x="90" y="121" text-anchor="middle" font-size="13" fill="#075aa6">forward →</text><text x="242" y="23" text-anchor="middle" font-size="13" fill="#a24605">backward ←</text></svg></div>
+          <a class="more" href="euler-tour-edges.html">Euler Tour版を読む →</a>
+        </article>
+      </div>
+      <div class="card" style="margin-top:1rem">
+        <table>
+          <caption class="small" style="caption-side:top;text-align:left;padding:.4rem 0">迷ったらこの表から選ぶ</caption>
+          <thead><tr><th scope="col">状況</th><th scope="col">選ぶ版</th><th scope="col">理由</th></tr></thead>
+          <tbody><tr><td>Actionは毎回1ターン。仕組みを理解したい。</td><td><a href="double-linked-object-pool.html">通常版</a></td><td>木の形がそのまま見える。</td></tr><tr><td>行動の完了まで数ターンかかる。</td><td><a href="multi-turn.html">複数ターン版</a></td><td>stepごとの候補を保留できる。</td></tr><tr><td>ノード・リンクのメモリを抑えたい。</td><td><a href="euler-tour-edges.html">Euler Tour版</a></td><td>辺を配列に詰める。</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="common" aria-labelledby="common-title">
+      <h2 id="common-title">どの版でも埋めるTODO</h2>
+      <div class="grid two">
+        <div class="card">
+          <h3>問題側が用意するもの</h3>
+          <ul><li><code>Action</code>：1回の操作を表す、小さな型。</li><li><code>Evaluator</code>：今の状態の点数。<strong>小さいほど良い</strong>。</li><li><code>Hash</code>：同じ状態を見分ける値。</li><li><code>State</code>：状態を持ち、<code>forward</code> と <code>backward</code> を実装。</li></ul>
+        </div>
+        <div class="card">
+          <h3>差分更新の往復</h3>
+          <div class="flow" aria-label="forwardとbackwardの流れ"><span class="step">現在のState</span><span class="arrow" aria-hidden="true">→</span><span class="step">forward(Action)</span><span class="arrow" aria-hidden="true">→</span><span class="step">候補を評価</span><span class="arrow" aria-hidden="true">→</span><span class="step">backward(Action)</span></div>
+          <p class="small">探索木を深さ優先で歩く間、同じStateを使い回します。<code>backward</code> は <code>forward</code> の完全な逆操作にします。</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="start" aria-labelledby="start-title">
+      <h2 id="start-title">最小の始め方</h2>
+      <div class="card">
+        <ol><li>3ページのうち1つを選び、対応するヘッダだけをincludeする。</li><li>問題の入力を <code>State</code> に入れ、<code>Action</code>・<code>Evaluator</code>・<code>Hash</code> を小さく設計する。</li><li>小さなビーム幅で動作確認し、正しさを確認してから幅を増やす。</li></ol>
+        <pre><code>// 具体的な呼び出しは方式ごとに異なります。
+// 各ページの「最小利用手順」を先に写してください。</code></pre>
+        <p class="note"><strong>注意：</strong>ヘッダは完成済みの問題解答ではありません。TODOを埋めて、対象問題の制約に合わせてテストしてください。</p>
+      </div>
+    </section>
+
+    <section aria-labelledby="links-title">
+      <h2 id="links-title">コードと記録</h2>
+      <div class="card">
+        <p>実装本体：<a href="double-linked-object-pool.hpp">double-linked-object-pool.hpp</a> / <a href="multi-turn.hpp">multi-turn.hpp</a> / <a href="euler-tour-edges.hpp">euler-tour-edges.hpp</a></p>
+        <p>出典の記録：<a href="README.md">beam-search/README.md</a> / <a href="NOTICE.md">NOTICE.md</a></p>
+        <p class="small">このHTMLは実装の読み方を補うガイドです。正確なAPIはリンク先のヘッダを確認してください。</p>
+      </div>
+    </section>
+  </main>
+
+  <footer><div class="wrap">
+    <p><strong>出典・利用条件</strong></p>
+    <p>原著者：<code>eijirou_kyopro</code>（eijirou）／記事：<a href="https://eijirou-kyopro.hatenablog.com/entry/2024/02/01/115639">差分更新ビームサーチの記事</a></p>
+    <p>取得日：2026-08-29（JST）。記事のソースコードは競技プログラミングで自由に利用可能です。公開コピーの利用許諾は、依頼者から「著者本人に確認済み」と申告されています。標準ライセンスの明示はないため、再利用時は <a href="NOTICE.md">NOTICE.md</a> と原著者表示を保持してください。</p>
+  </div></footer>
+</body>
+</html>

@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>通常版 | 二重連鎖木 + ObjectPool</title>
+  <meta name="description" content="差分更新ビームサーチ通常版。二重連鎖木、ObjectPool、Selectorの役割とTODOを図で説明します。">
+  <style>
+    :root { color-scheme:light; --ink:#172033; --muted:#46536a; --paper:#fff; --wash:#f3f7fc; --line:#cbd5e1; --blue:#075aa6; --blue-dark:#063b70; --teal:#0f766e; --orange:#a24605; --pink:#a11b57; --focus:#9a3412; --shadow:0 10px 28px rgba(15,23,42,.10); }
+    * { box-sizing:border-box; } body { margin:0; color:var(--ink); background:var(--wash); font:16px/1.72 system-ui,-apple-system,"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif; } a { color:var(--blue-dark); text-underline-offset:3px; } a:hover { color:var(--pink); } a:focus-visible,summary:focus-visible { outline:3px solid var(--focus); outline-offset:3px; border-radius:4px; } .skip { position:absolute; left:-9999px; } .skip:focus { left:1rem; top:1rem; z-index:9; padding:.4rem .8rem; color:#fff; background:var(--blue-dark); }
+    header { color:#fff; background:linear-gradient(135deg,#063b70,#075aa6 60%,#0f766e); } .wrap { width:min(1100px,calc(100% - 2rem)); margin:auto; } header .wrap { padding:2.25rem 0 1.8rem; } .eyebrow { margin:0 0 .5rem; color:#dbeafe; font-size:.88rem; letter-spacing:.1em; font-weight:700; } h1,h2,h3 { line-height:1.25; } h1 { max-width:850px; margin:.1rem 0 .7rem; font-size:clamp(2rem,5vw,3.4rem); } h2 { margin:0 0 1rem; font-size:clamp(1.45rem,3vw,2.05rem); } h3 { margin:.1rem 0 .45rem; font-size:1.18rem; } header p { max-width:770px; margin:.4rem 0; color:#eef6ff; }
+    nav { border-top:1px solid rgba(255,255,255,.28); background:rgba(3,31,61,.28); } nav .wrap { display:flex; flex-wrap:wrap; gap:.45rem 1rem; padding:.7rem 0; } nav a { color:#fff; font-weight:700; }
+    main { padding:2rem 0 4rem; } section { margin:0 0 2.5rem; } .card { padding:1.25rem; background:var(--paper); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); } .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; } .intro { display:grid; grid-template-columns:minmax(0,1fr) minmax(310px,.95fr); align-items:center; gap:1rem; } .lead { font-size:1.12rem; } .note { padding:.85rem 1rem; border-left:5px solid var(--teal); background:#e8f7f5; } .warning { padding:.85rem 1rem; border-left:5px solid var(--orange); background:#fff8ed; } .diagram { margin:1rem 0; padding:.45rem; background:#fff; border:1px solid var(--line); border-radius:12px; } svg { display:block; width:100%; height:auto; } .small { color:var(--muted); font-size:.92rem; } .legend { display:flex; flex-wrap:wrap; gap:.45rem 1rem; margin:.7rem 0 0; color:var(--muted); font-size:.9rem; } .legend span::before { content:""; display:inline-block; width:.8rem; height:.8rem; margin-right:.35rem; vertical-align:-.05em; border-radius:3px; background:var(--line); } .legend .tree::before { background:#9ec8f2; } .legend .state::before { background:#85d9cf; } .legend .pool::before { background:#e7b08e; }
+    .flow { display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:.5rem; margin:1rem 0; } .step { padding:.55rem .8rem; border:2px solid var(--blue); border-radius:10px; background:#eef6ff; font-weight:700; text-align:center; } .arrow { color:var(--orange); font-size:1.5rem; font-weight:900; } table { width:100%; border-collapse:collapse; background:var(--paper); } th,td { padding:.7rem .75rem; border:1px solid var(--line); vertical-align:top; text-align:left; } th { color:#fff; background:var(--blue-dark); } code { padding:.1rem .3rem; color:#172033; background:#e8eef7; border-radius:4px; } pre { margin:.8rem 0 0; padding:1rem; overflow:auto; color:#f8fafc; background:#111827; border-radius:10px; font:.9rem/1.55 ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace; } ul,ol { padding-left:1.35rem; } .source { margin-top:1rem; padding:1rem; color:var(--ink); background:#fff8ed; border:1px solid #efc58e; border-radius:12px; } footer { padding:1.7rem 0 2.5rem; color:#fff; background:#172033; } footer a { color:#c6e2ff; } footer p { margin:.45rem 0; }
+    @media (max-width:800px) { .intro,.grid { grid-template-columns:1fr; } } @media (max-width:560px) { body { font-size:15px; } .wrap { width:min(100% - 1.1rem,1100px); } header .wrap { padding-top:1.8rem; } th,td { padding:.55rem; } }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">本文へ移動</a>
+  <header><div class="wrap">
+    <p class="eyebrow">01 / 二重連鎖木 + OBJECTPOOL</p>
+    <h1>まず使うなら、この通常版</h1>
+    <p>探索木の各ノードをリンクでつなぎ、不要になったノードの場所を再利用します。Actionが毎回1ターン進む問題の基本形です。</p>
+  </div><nav aria-label="ページ移動"><div class="wrap"><a href="index.html">← 3方式の入口</a><a href="#picture">図で理解</a><a href="#todo">TODO</a><a href="#use">最小利用</a><a href="#errors">失敗例</a><a href="multi-turn.html">次：複数ターン版 →</a></div></nav></header>
+
+  <main id="main" class="wrap">
+    <section class="intro" id="picture" aria-labelledby="picture-title">
+      <div><h2 id="picture-title">木を歩き、状態だけを差分更新する</h2>
+        <p class="lead">木の枝を1本進むときは <code>move_forward</code>、戻るときは <code>move_backward</code>。同じ <code>State</code> を往復させるので、状態の作り直しを減らせます。</p>
+        <p class="note"><strong>向いている用途：</strong>1回のActionが1ターン、メモリに余裕があり、木の親子関係をデバッグしやすく見たいとき。</p>
+      </div>
+      <figure class="diagram">
+        <svg viewBox="0 0 720 360" role="img" aria-labelledby="tree-title tree-desc">
+          <title id="tree-title">二重連鎖木とObjectPool</title>
+          <desc id="tree-desc">左に親子と左右の兄弟を持つ探索木、右に使い回される番号付き配列ObjectPoolを示す図。</desc>
+          <defs><marker id="arrow-blue" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8Z" fill="#075aa6"/></marker><marker id="arrow-teal" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8Z" fill="#0f766e"/></marker></defs>
+          <text x="15" y="26" font-size="18" font-weight="700" fill="#063b70">探索木（Tree）</text>
+          <path d="M150 91V148 M150 148L80 232 M150 148L220 232 M80 232H220" stroke="#075aa6" stroke-width="3" fill="none" marker-end="url(#arrow-blue)"/>
+          <path d="M80 232H220" stroke="#a24605" stroke-width="3" fill="none" marker-start="url(#arrow-blue)" marker-end="url(#arrow-blue)"/>
+          <g text-anchor="middle" font-size="15"><rect x="102" y="48" width="96" height="43" rx="9" fill="#85d9cf" stroke="#0f766e" stroke-width="2"/><text x="150" y="75" fill="#172033">root</text><rect x="36" y="232" width="88" height="43" rx="9" fill="#9ec8f2" stroke="#075aa6" stroke-width="2"/><text x="80" y="259" fill="#172033">node 1</text><rect x="176" y="232" width="88" height="43" rx="9" fill="#9ec8f2" stroke="#075aa6" stroke-width="2"/><text x="220" y="259" fill="#172033">node 2</text></g>
+          <text x="146" y="319" text-anchor="middle" font-size="14" fill="#a24605">left / right（兄弟）</text><text x="67" y="182" font-size="14" fill="#075aa6">child</text><text x="160" y="124" font-size="14" fill="#075aa6">parent</text>
+          <path d="M300 180H370" stroke="#0f766e" stroke-width="3" marker-end="url(#arrow-teal)"/><text x="335" y="164" text-anchor="middle" font-size="14" fill="#0f766e">再利用</text>
+          <text x="430" y="26" font-size="18" font-weight="700" fill="#063b70">ObjectPool（番号を再利用）</text>
+          <g font-size="14"><rect x="420" y="52" width="230" height="48" rx="8" fill="#e8f7f5" stroke="#0f766e" stroke-width="2"/><text x="435" y="82" fill="#172033">[0] root</text><rect x="420" y="108" width="230" height="48" rx="8" fill="#9ec8f2" stroke="#075aa6" stroke-width="2"/><text x="435" y="138" fill="#172033">[1] node 1</text><rect x="420" y="164" width="230" height="48" rx="8" fill="#9ec8f2" stroke="#075aa6" stroke-width="2"/><text x="435" y="194" fill="#172033">[2] node 2</text><rect x="420" y="220" width="230" height="48" rx="8" fill="#e7b08e" stroke="#a24605" stroke-width="2"/><text x="435" y="250" fill="#172033">[3] 空き → 次に再利用</text></g>
+        </svg>
+        <figcaption class="small">Nodeは <code>parent / child / left / right</code> を持ちます。<code>pop</code> は見かけ上の削除、次の <code>push</code> が空き番号を使います。</figcaption>
+      </figure>
+    </section>
+
+    <section aria-labelledby="role-title"><h2 id="role-title">部品の役割</h2>
+      <div class="grid">
+        <article class="card"><h3>Tree：探索木を保つ</h3><p>候補を葉として追加し、次のターンで葉を展開します。不要な葉は親をたどって削除します。深さ優先で歩くため、<code>State</code> の往復が使えます。</p></article>
+        <article class="card"><h3>Selector：上位だけを残す</h3><p>候補をハッシュで重複排除し、評価値の小さいものを <code>beam_width</code> 個まで保持します。満杯のときは最も悪い候補をセグメント木で追い出します。</p></article>
+      </div>
+      <div class="diagram">
+        <svg viewBox="0 0 720 220" role="img" aria-labelledby="select-title select-desc">
+          <title id="select-title">Selectorの流れ</title><desc id="select-desc">候補をハッシュでまとめ、評価値のよい上位3件だけをビームに残す流れ。</desc>
+          <defs><marker id="arr-s" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8Z" fill="#075aa6"/></marker></defs>
+          <rect x="20" y="55" width="170" height="110" rx="12" fill="#eef6ff" stroke="#075aa6" stroke-width="2"/><text x="105" y="86" text-anchor="middle" font-size="18" fill="#172033">候補 5件</text><text x="105" y="115" text-anchor="middle" font-size="14" fill="#46536a">hash / costを持つ</text><text x="105" y="143" text-anchor="middle" font-size="14" fill="#46536a">同じhashは比較</text>
+          <path d="M190 110H275" stroke="#075aa6" stroke-width="3" marker-end="url(#arr-s)"/><rect x="275" y="55" width="170" height="110" rx="12" fill="#e8f7f5" stroke="#0f766e" stroke-width="2"/><text x="360" y="86" text-anchor="middle" font-size="18" fill="#172033">Selector</text><text x="360" y="115" text-anchor="middle" font-size="14" fill="#46536a">重複を捨てる</text><text x="360" y="143" text-anchor="middle" font-size="14" fill="#46536a">悪い候補を追い出す</text>
+          <path d="M445 110H530" stroke="#075aa6" stroke-width="3" marker-end="url(#arr-s)"/><rect x="530" y="40" width="170" height="140" rx="12" fill="#f0fdfa" stroke="#0f766e" stroke-width="2"/><text x="615" y="73" text-anchor="middle" font-size="18" fill="#172033">次のビーム</text><text x="575" y="108" font-size="15" fill="#172033">1  cost 3</text><text x="575" y="135" font-size="15" fill="#172033">2  cost 5</text><text x="575" y="162" font-size="15" fill="#172033">3  cost 8</text><text x="674" y="108" font-size="13" fill="#0f766e">幅3</text>
+        </svg>
+      </div>
+    </section>
+
+    <section id="todo" aria-labelledby="todo-title"><h2 id="todo-title">埋めるTODO</h2>
+      <div class="card"><table><caption class="small" style="caption-side:top;text-align:left;padding:.4rem 0">ヘッダ内の型・関数</caption><thead><tr><th scope="col">場所</th><th scope="col">あなたが決めること</th><th scope="col">守ること</th></tr></thead><tbody>
+        <tr><th scope="row"><code>using Hash</code></th><td>状態を表すハッシュの型と計算方法。</td><td>同じ状態はできるだけ同じ値。衝突しても壊れない比較を考える。</td></tr>
+        <tr><th scope="row"><code>Action</code></th><td>操作の番号・向き・量など。</td><td>Nodeに多数コピーされるので小さく。既定コンストラクタも初期化する。</td></tr>
+        <tr><th scope="row"><code>Evaluator</code></th><td>状態の評価情報と <code>evaluate()</code>。</td><td>小さいほど良い。コピーしても評価が変わらない値にする。</td></tr>
+        <tr><th scope="row"><code>State</code> のコンストラクタ</th><td>入力を保存し、初期状態を作る。</td><td>探索開始時の状態にする。<code>State</code> は値渡しされる。</td></tr>
+        <tr><th scope="row"><code>expand</code></th><td>可能なActionを列挙し、forward後のEvaluator/Hashを作って <code>selector.push(..., parent, finished)</code>。</td><td>finishedは「その候補で実行可能解が完成」のときだけtrue。</td></tr>
+        <tr><th scope="row"><code>move_forward/backward</code></th><td>Actionの差分を適用・取り消す。</td><td>backward(forward(s,a),a) が元のStateに戻る。</td></tr>
+      </tbody></table></div>
+      <p class="warning"><strong>rootの注意：</strong>この版の <code>beam_search</code> は <code>Node root</code> を受け取ります。rootに、初期Stateに対応する <code>Evaluator</code> と <code>Hash</code> を入れてください。rootのActionはダミーで構いません。</p>
+    </section>
+
+    <section id="use" aria-labelledby="use-title"><h2 id="use-title">最小利用手順</h2>
+      <div class="card"><div class="flow" aria-label="通常版の実行手順"><span class="step">Stateを初期化</span><span class="arrow" aria-hidden="true">→</span><span class="step">rootを作る</span><span class="arrow" aria-hidden="true">→</span><span class="step">beam_search</span><span class="arrow" aria-hidden="true">→</span><span class="step">Action列</span></div>
+      <pre><code>#include "beam-search/double-linked-object-pool.hpp"
+
+using namespace beam_search;
+
+// TODOを埋めた後の最小形（値は問題に合わせて決める）
+Config config{/* max_turn */ 100, /* beam_width */ 200,
+              /* nodes_capacity */ 50000, /* hash_map_capacity */ 4096};
+State state{/* input */};
+Evaluator initial_evaluator{/* initial state */};
+Hash initial_hash = /* initial stateのhash */;
+Node root(Action{}, initial_evaluator, initial_hash);
+vector&lt;Action&gt; answer = beam_search(config, state, root);</code></pre>
+      <p class="small">固定ターン型では <code>finished=false</code> のまま最後まで進め、戻ったAction列を使います。ターン最小化型では、完成した候補だけ <code>finished=true</code> にします。</p></div>
+    </section>
+
+    <section id="errors" aria-labelledby="errors-title"><h2 id="errors-title">典型的な失敗</h2>
+      <div class="grid"><article class="card"><h3>戻ったStateが少し違う</h3><p><code>forward</code> だけで確認すると見つけにくいバグです。Actionをランダムに選び、forward→backward後に、配列・評価・hashがすべて元に戻るテストを作ります。</p></article><article class="card"><h3>幅や容量を0にする</h3><p><code>beam_width</code>、<code>nodes_capacity</code>、<code>hash_map_capacity</code> は正の値にします。HashMapの容量は候補数より十分大きく（目安4〜16倍）します。</p></article><article class="card"><h3>同じHashを無条件に同一視する</h3><p>hash衝突はあり得ます。必要なら状態の一部を確認するか、衝突確率を十分下げます。衝突を見落とすと、正しい枝が消えます。</p></article><article class="card"><h3>rootの意味を取り違える</h3><p>rootは「初期状態の評価とhashを持つノード」です。初期Stateを1手進めた値をrootに入れないでください。</p></article></div>
+    </section>
+
+    <section aria-labelledby="source-title"><h2 id="source-title">実装本体と出典</h2><div class="source"><p><strong>ソース：</strong><a href="double-linked-object-pool.hpp">double-linked-object-pool.hpp</a>（このページの説明と対応するヘッダ）</p><p><strong>原著者：</strong><code>eijirou_kyopro</code>（eijirou）<br><strong>記事：</strong><a href="https://eijirou-kyopro.hatenablog.com/entry/2024/02/01/115639">差分更新ビームサーチの記事</a><br><strong>取得日：</strong>2026-08-29（JST）</p><p>記事本文の「ソースコードはプログラミングコンテストで自由に利用可能」という条件に基づきます。公開リポジトリへのコピー利用許諾は、依頼者から「著者本人に確認済み」と申告されています。標準ライセンスの明示はありません。再利用時は <a href="NOTICE.md">NOTICE.md</a> と原著者表示を保持してください。</p></div></section>
+  </main>
+  <footer><div class="wrap"><p><strong>通常版：二重連鎖木 + ObjectPool</strong></p><p><a href="index.html">入口へ戻る</a> ／ <a href="multi-turn.html">複数ターン版</a> ／ <a href="euler-tour-edges.html">Euler Tour版</a></p><p class="small" style="color:#dbeafe">このページは使い方のガイドです。TODOを埋め、問題固有の制約に合わせてコンパイル・テストしてください。</p></div></footer>
+</body>
+</html>
