@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>AHC Library Handbook</title>
+  <style>
+    :root{color-scheme:light dark;--bg:#f6f8fb;--fg:#172033;--card:#fff;--line:#cbd5e1;--a:#2563eb;--b:#0f766e;--c:#b45309}
+    @media(prefers-color-scheme:dark){:root{--bg:#101827;--fg:#eef2ff;--card:#1f2937;--line:#526071;--a:#93c5fd;--b:#5eead4;--c:#fbbf24}}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.65 system-ui,sans-serif}main{width:min(1120px,92vw);margin:auto;padding:2rem 0 4rem}a{color:var(--a)}header{margin-bottom:2rem}.hero{width:100%;height:auto;background:var(--card);border:1px solid var(--line);border-radius:16px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(235px,1fr));gap:1rem}.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:1rem}.card h3{margin:.1rem 0}.card p{margin:.45rem 0}.when{color:var(--b)}code{background:#0001;padding:.1em .3em;border-radius:4px}section{margin-top:2.5rem}.tag{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:.05rem .55rem;font-size:.82rem}.mini{width:100%;height:70px}.links{font-size:.92rem}nav{display:flex;gap:1rem;flex-wrap:wrap}
+  </style>
+</head>
+<body><main>
+  <header>
+    <nav><a href="README.md">README</a><a href="core/index.html">基盤</a><a href="local-search/index.html">局所探索</a><a href="utilities/index.html">汎用部品</a><a href="beam-search/index.html">Beam</a></nav>
+    <h1>AHC Library Handbook</h1>
+    <p>「今の困りごと」から、使う部品を選ぶための一覧です。</p>
+    <svg class="hero" viewBox="0 0 1000 210" role="img" aria-labelledby="flow-title flow-desc">
+      <title id="flow-title">AHC探索の流れ</title><desc id="flow-desc">時間と乱数を基盤に、状態を変更し、評価し、受理し、最良解を保存して提出ファイルへまとめる。</desc>
+      <defs><marker id="ar" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8z" fill="currentColor"/></marker></defs>
+      <g fill="none" stroke="currentColor" stroke-width="3" marker-end="url(#ar)"><path d="M180 105H245M390 105H455M600 105H665M810 105H875"/></g>
+      <g fill="var(--card)" stroke="var(--line)" stroke-width="2"><rect x="25" y="55" width="155" height="100" rx="14"/><rect x="245" y="55" width="145" height="100" rx="14"/><rect x="455" y="55" width="145" height="100" rx="14"/><rect x="665" y="55" width="145" height="100" rx="14"/><rect x="875" y="55" width="100" height="100" rx="14"/></g>
+      <g text-anchor="middle" fill="currentColor"><text x="102" y="95" font-size="20">Timer / RNG</text><text x="102" y="125">探索を回す</text><text x="317" y="95" font-size="20">近傍</text><text x="317" y="125">状態を変える</text><text x="527" y="95" font-size="20">SA / Beam</text><text x="527" y="125">候補を選ぶ</text><text x="737" y="95" font-size="20">Best</text><text x="737" y="125">最良を残す</text><text x="925" y="95" font-size="18">結合</text><text x="925" y="125">提出</text></g>
+    </svg>
+  </header>
+
+  <section><h2>まず入れる基盤</h2><div class="grid">
+    <article class="card"><span class="tag">時間</span><h3>Timer</h3><p>経過・残り・進捗率・期限切れを取得。</p><p class="when">使う場面: 時間いっぱい探索する。</p><p><code>expired()</code> <code>progress()</code></p><p class="links"><a href="core/timer.html">図解とAPI →</a></p></article>
+    <article class="card"><span class="tag">乱数</span><h3>Rng</h3><p>seedから高速で再現可能な乱数を生成。</p><p class="when">使う場面: 近傍・確率受理・抽選。</p><p><code>integer()</code> <code>real()</code> <code>unit()</code></p><p class="links"><a href="core/rng.html">図解とAPI →</a></p></article>
+    <article class="card"><span class="tag">重複排除</span><h3>Zobrist</h3><p>状態変更をXOR一回でhashへ反映。</p><p class="when">使う場面: Beamの同一状態判定。</p><p><code>update()</code> <code>apply()</code></p><p class="links"><a href="core/zobrist.html">図解とAPI →</a></p></article>
+  </div></section>
+
+  <section><h2>探索方法を選ぶ</h2><div class="grid">
+    <article class="card"><span class="tag">局所探索</span><h3>Annealing</h3><p>改善は採用。悪化は温度に応じて採用。</p><p class="when">使う場面: 良い近傍を何度も試せる。</p><p><code>LinearTemperature</code> <code>accept()</code></p><p class="links"><a href="local-search/annealing.html">図解とAPI →</a></p></article>
+    <article class="card"><span class="tag">計測</span><h3>SearchStats</h3><p>試行・受理・改善・bestを集計。</p><p class="when">使う場面: 温度や近傍を調整する。</p><p><code>seed()</code> <code>observe()</code></p><p class="links"><a href="local-search/search_stats.html">図解とAPI →</a></p></article>
+    <article class="card"><span class="tag">試して戻す</span><h3>RollbackArray</h3><p>配列の変更をsnapshot地点まで復元。</p><p class="when">使う場面: 変更後に評価して不採用なら戻す。</p><p><code>snapshot()</code> <code>rollback()</code> <code>commit()</code></p><p class="links"><a href="local-search/rollback_array.html">図解とAPI →</a></p></article>
+    <article class="card"><span class="tag">複数回探索</span><h3>BestSolution</h3><p>最良のStateとscoreを一組だけ保持。</p><p class="when">使う場面: 初期解や方針を変えて何度も試す。</p><p><code>consider()</code> <code>state()</code></p><p class="links"><a href="local-search/best_solution.html">図解とAPI →</a></p></article>
+  </div></section>
+
+  <section><h2>Beam Search</h2><div class="grid">
+    <article class="card"><h3>双方向リスト＋Object Pool</h3><p>差分適用/取消で状態コピーを減らす標準版。</p><p class="when">使う場面: 1ターンずつ候補を広げる。</p><p class="links"><a href="beam-search/double-linked-object-pool.html">図解 →</a></p></article>
+    <article class="card"><h3>複数ターン版</h3><p>1回の選択で複数ターン先まで進める。</p><p class="when">使う場面: 操作単位と評価単位が違う。</p><p class="links"><a href="beam-search/multi-turn.html">図解 →</a></p></article>
+    <article class="card"><h3>Euler Tour辺配列版</h3><p>木の差分適用順を辺列として管理。</p><p class="when">使う場面: 状態差分を区間・辺で扱いたい。</p><p class="links"><a href="beam-search/euler-tour-edges.html">図解 →</a></p></article>
+  </div></section>
+
+  <section><h2>よく使う小道具</h2><div class="grid">
+    <article class="card"><h3>Grid</h3><p>座標、盤面内判定、4/8近傍、距離。</p><p class="when">使う場面: 盤面問題の土台。</p><p><code>Point</code> <code>neighbors4()</code> <code>manhattan()</code></p><p class="links"><a href="utilities/grid.html">図解とAPI →</a></p></article>
+    <article class="card"><h3>Grid BFS</h3><p>単一/複数始点の距離・親・経路復元。</p><p class="when">使う場面: 壁を避けた最短路が必要。</p><p><code>bfs_grid()</code> <code>path_to()</code></p><p class="links"><a href="utilities/grid_bfs.html">図解とAPI →</a></p></article>
+    <article class="card"><h3>Permutation Ops</h3><p>swap・区間reverse・relocateと逆操作。</p><p class="when">使う場面: 順番を近傍として変更する。</p><p><code>SwapOperation</code> <code>RelocateOperation</code></p><p class="links"><a href="utilities/permutation_ops.html">図解とAPI →</a></p></article>
+    <article class="card"><h3>Weighted Sampler</h3><p>重みに比例して候補を選び、重みも更新。</p><p class="when">使う場面: 有望候補を多めに試す。</p><p><code>set()</code> <code>sample()</code></p><p class="links"><a href="utilities/weighted_sampler.html">図解とAPI →</a></p></article>
+  </div></section>
+
+  <section><h2>提出前</h2><div class="grid"><article class="card"><h3>amalgamate.py</h3><p>ローカルのquoted includeを再帰展開し、1つの提出ファイルへまとめます。公開URLとcommit情報もコメントに残します。</p><p><code>python3 tools/amalgamate.py main.cpp -o submission.cpp</code></p><p class="links"><a href="tools/amalgamate.html">図解と使い方 →</a></p></article></div></section>
+</main></body></html>

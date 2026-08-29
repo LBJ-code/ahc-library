@@ -2,6 +2,8 @@
 
 AtCoder Heuristic Contest (AHC) で使用する、再利用可能なライブラリを管理するためのリポジトリです。
 
+まず全体を眺めるなら、[AHC Library Handbook](handbook.html) を開いてください。各部品の「何ができる・いつ使う・主なAPI」を短くまとめています。
+
 ## Libraries
 
 - [差分更新ビームサーチ](beam-search/README.md)
